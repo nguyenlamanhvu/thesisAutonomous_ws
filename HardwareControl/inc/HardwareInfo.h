@@ -26,7 +26,7 @@ extern "C"
 #endif
 
 /********** Include section ***************************************************/
-#include "err_code.h"
+#include "errorCode.h"
 /********** Constant  and compile switch definition section *******************/
 
 /********** Type definition section *******************************************/

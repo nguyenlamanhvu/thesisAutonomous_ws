@@ -16,8 +16,8 @@
  * @author	Anh Vu
  */
 
-#ifndef __BASECONTROL_PUBLIC_H__
-#define __BASECONTROL_PUBLIC_H__
+#ifndef ROS_STM32_BASE_CONTROL_INC_BASECONTROL_H_
+#define ROS_STM32_BASE_CONTROL_INC_BASECONTROL_H_
 
 #ifdef __cplusplus
 extern "C"
@@ -50,5 +50,5 @@ mlsErrorCode_t mlsBaseControlMain(void);
 }
 #endif
 
-#endif /* __BASECONTROL_PUBLIC_H__ */
+#endif /* ROS_STM32_BASE_CONTROL_INC_BASECONTROL_H_ */
 /**@}*/

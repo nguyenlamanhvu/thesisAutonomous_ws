@@ -16,8 +16,8 @@
  * @author	Anh Vu
  */
 
-#ifndef __BASECONTROLPRIVATE_H__
-#define __BASECONTROLPRIVATE_H__
+#ifndef ROS_STM32_BASE_CONTROL_INC_BASECONTROLPRIVATE_H_
+#define ROS_STM32_BASE_CONTROL_INC_BASECONTROLPRIVATE_H_
 
 #ifdef __cplusplus
 extern "C"
@@ -64,9 +64,16 @@ void mlsBaseControlWaitSerialLink(bool isConnected);
  */
 bool mlsBaseControlConnectStatus(void);
 
+/*
+ * @brief Send log message to ROS node.
+ * @param None
+ * @return Nonde
+ */
+void mlsBaseControlSendLogMsg(void);
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __BASECONTROLPRIVATE_H__ */
+#endif /* ROS_STM32_BASE_CONTROL_INC_BASECONTROLPRIVATE_H_ */
 /**@}*/

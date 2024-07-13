@@ -120,4 +120,3 @@ void mlsBaseControlSendLogMsg(void)
 /********** Class function implementation section *****************************/
 
 /**@}*/
-

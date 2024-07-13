@@ -34,12 +34,17 @@
 /********** Global function definition section ********************************/
 mlsErrorCode_t mlsBaseControlInit(void)
 {
+	mlsErrorCode_t errorCode = MLS_ERROR;
 	/* Initialize ROS*/
 	mlsBaseControlROSSetup();
+
+	errorCode = MLS_SUCCESS;
+	return errorCode;
 }
 
 mlsErrorCode_t mlsBaseControlMain(void)
 {
+	mlsErrorCode_t errorCode = MLS_ERROR;
 	/* Send log message*/
 	mlsBaseControlSendLogMsg();
 
@@ -48,12 +53,9 @@ mlsErrorCode_t mlsBaseControlMain(void)
 
 	/* Keep rosserial connection */
 	mlsBaseControlWaitSerialLink(mlsBaseControlConnectStatus());
+
+	errorCode = MLS_SUCCESS;
+	return errorCode;
 }
+
 /**@}*/
-
-
-
-
-
-
-

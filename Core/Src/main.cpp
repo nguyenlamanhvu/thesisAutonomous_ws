@@ -25,7 +25,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "BaseControl.h"
+#include "../../ros_stm32_base_control/inc/BaseControl.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -92,14 +92,27 @@ int main(void)
   MX_I2C1_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+  mlsErrorCode_t errorCode = MLS_ERROR;
 
+  errorCode = mlsBaseControlInit();
+  if(errorCode == MLS_ERROR)
+  {
+	  return 0;
+  }
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /* USER CODE END WHILE */
+	  mlsErrorCode_t errorCode = MLS_ERROR;
+
+	  errorCode = mlsBaseControlMain();
+	  if(errorCode == MLS_ERROR)
+	  {
+	    return 0;
+	  }
+	/* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
   }
