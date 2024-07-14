@@ -67,9 +67,16 @@ bool mlsBaseControlConnectStatus(void);
 /*
  * @brief Send log message to ROS node.
  * @param None
- * @return Nonde
+ * @return None
  */
 void mlsBaseControlSendLogMsg(void);
+
+/*
+ * @brief Publish IMU message to ROS node.
+ * @param None
+ * @return None
+ */
+void mlsBaseControlPublishImuMsg(void);
 
 #ifdef __cplusplus
 }

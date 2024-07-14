@@ -45,6 +45,9 @@ mlsErrorCode_t mlsBaseControlInit(void)
 mlsErrorCode_t mlsBaseControlMain(void)
 {
 	mlsErrorCode_t errorCode = MLS_ERROR;
+	/* Publish IMU data to topic "ROS_TOPIC_IMU"*/
+	mlsBaseControlPublishImuMsg();
+
 	/* Send log message*/
 	mlsBaseControlSendLogMsg();
 

@@ -41,6 +41,7 @@
 #include "HardwareInfo.h"
 /********** Local Constant and compile switch definition section **************/
 #define USE_ROS_LOG_DEBUG
+//#define USE_ROS_LOG_REPEAT_CONNECTED_DEBUG
 
 #define ROS_TOPIC_IMU                       "imu"
 /********** Local Type definition section *************************************/
@@ -49,18 +50,81 @@
 
 /********** Local (static) variable definition section ************************/
 ros::NodeHandle rosNodeHandle;    	/*!< ROS node handle */
-//ros::Time RosCurrentTime;        	/*!< ROS current time */
 char rosLogBuffer[100];          	/*!< ROS log message buffer */
 
+char imuFrameId[20];
+
+sensor_msgs::Imu imuMsg;           /*!< ROS IMU message */
+
+ros::Publisher imuPub(ROS_TOPIC_IMU, &imuMsg);
+
 /********** Local (static) function declaration section ***********************/
-
+static sensor_msgs::Imu BaseControlGetIMU(void);
+static ros::Time BaseControlGetROSTime(void);
 /********** Local function definition section *********************************/
+static sensor_msgs::Imu BaseControlGetIMU(void)
+{
+	float accelX = 9.78, accelY = 0, accelZ = 0;
+	float gyroX = 0, gyroY = 0, gyroZ = 0;
+	float q0 = 1, q1 = 0, q2 = 0, q3 = 0;
+	sensor_msgs::Imu imuMsg_;
 
+	imuMsg_.angular_velocity.x = gyroX;
+	imuMsg_.angular_velocity.y = gyroY;
+	imuMsg_.angular_velocity.z = gyroZ;
+
+	imuMsg_.linear_acceleration.x = accelX;
+	imuMsg_.linear_acceleration.y = accelY;
+	imuMsg_.linear_acceleration.z = accelZ;
+
+	imuMsg_.orientation.x = q0;
+	imuMsg_.orientation.y = q1;
+	imuMsg_.orientation.z = q2;
+	imuMsg_.orientation.w = q3;
+
+	imuMsg_.angular_velocity_covariance[0] = 0;
+	imuMsg_.angular_velocity_covariance[1] = 0;
+	imuMsg_.angular_velocity_covariance[2] = 0;
+	imuMsg_.angular_velocity_covariance[3] = 0;
+	imuMsg_.angular_velocity_covariance[4] = 0;
+	imuMsg_.angular_velocity_covariance[5] = 0;
+	imuMsg_.angular_velocity_covariance[6] = 0;
+	imuMsg_.angular_velocity_covariance[7] = 0;
+	imuMsg_.angular_velocity_covariance[8] = 0;
+
+	imuMsg_.linear_acceleration_covariance[0] = 0;
+	imuMsg_.linear_acceleration_covariance[1] = 0;
+	imuMsg_.linear_acceleration_covariance[2] = 0;
+	imuMsg_.linear_acceleration_covariance[3] = 0;
+	imuMsg_.linear_acceleration_covariance[4] = 0;
+	imuMsg_.linear_acceleration_covariance[5] = 0;
+	imuMsg_.linear_acceleration_covariance[6] = 0;
+	imuMsg_.linear_acceleration_covariance[7] = 0;
+	imuMsg_.linear_acceleration_covariance[8] = 0;
+
+	imuMsg_.orientation_covariance[0] = 0;
+	imuMsg_.orientation_covariance[1] = 0;
+	imuMsg_.orientation_covariance[2] = 0;
+	imuMsg_.orientation_covariance[3] = 0;
+	imuMsg_.orientation_covariance[4] = 0;
+	imuMsg_.orientation_covariance[5] = 0;
+	imuMsg_.orientation_covariance[6] = 0;
+	imuMsg_.orientation_covariance[7] = 0;
+	imuMsg_.orientation_covariance[8] = 0;
+
+	return imuMsg_;
+}
+
+static ros::Time BaseControlGetROSTime(void)
+{
+	return rosNodeHandle.now();
+}
 /********** Global function definition section ********************************/
 void mlsBaseControlROSSetup(void)
 {
     rosNodeHandle.initNode(); /*!< Init ROS node handle */
-//    RosNodeHandle.advertise(chatter);
+
+    rosNodeHandle.advertise(imuPub);	/*!< Register the publisher to "imu" topic */
 }
 
 void mlsBaseControlSpinOnce(void)
@@ -109,13 +173,29 @@ void mlsBaseControlSendLogMsg(void)
 			sprintf(rosLogBuffer, "--------------------------");
 			rosNodeHandle.loginfo(rosLogBuffer);
 
+#ifdef USE_ROS_LOG_REPEAT_CONNECTED_DEBUG
+			logFlag = false;
+#else
 			logFlag = true;
+#endif
 		}
 	}
 	else
 	{
 		logFlag = false;
 	}
+}
+
+void mlsBaseControlPublishImuMsg(void)
+{
+	/* Get IMU data*/
+	imuMsg = BaseControlGetIMU();
+
+	imuMsg.header.stamp = BaseControlGetROSTime();
+//	imuMsg.header.frame_id = imuFrameId;
+
+	/* Publish IMU message*/
+	imuPub.publish(&imuMsg);
 }
 /********** Class function implementation section *****************************/
 
