@@ -25,6 +25,9 @@
 
 /********** Local Macro definition section ************************************/
 
+/********** Global variable definition section ********************************/
+uint8_t gBaseControlTimeUpdateFlag[10];
+extern TIM_HandleTypeDef htim6;
 /********** Local (static) variable definition ********************************/
 
 /********** Local (static) function declaration section ***********************/
@@ -35,18 +38,25 @@
 mlsErrorCode_t mlsBaseControlInit(void)
 {
 	mlsErrorCode_t errorCode = MLS_ERROR;
+	/* Start Timer Interrupt*/
+	errorCode = mlsBaseControlStartTimerInterrupt(&htim6);
+
 	/* Initialize ROS*/
 	mlsBaseControlROSSetup();
 
-	errorCode = MLS_SUCCESS;
 	return errorCode;
 }
 
 mlsErrorCode_t mlsBaseControlMain(void)
 {
 	mlsErrorCode_t errorCode = MLS_ERROR;
-	/* Publish IMU data to topic "ROS_TOPIC_IMU"*/
-	mlsBaseControlPublishImuMsg();
+
+	/* Publish IMU data to topic "imu"*/
+	if(gBaseControlTimeUpdateFlag[IMU_PUBLISH_TIME_INDEX] == 1)
+	{
+		mlsBaseControlPublishImuMsg();
+		gBaseControlTimeUpdateFlag[IMU_PUBLISH_TIME_INDEX] = 0;
+	}
 
 	/* Send log message*/
 	mlsBaseControlSendLogMsg();

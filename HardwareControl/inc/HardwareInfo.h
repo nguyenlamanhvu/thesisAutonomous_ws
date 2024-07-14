@@ -27,6 +27,9 @@ extern "C"
 
 /********** Include section ***************************************************/
 #include "errorCode.h"
+#include "BaseControl.h"
+#include "main.h"
+#include "stm32f4xx_hal_tim.h"
 /********** Constant  and compile switch definition section *******************/
 
 /********** Type definition section *******************************************/
@@ -34,7 +37,19 @@ extern "C"
 /********** Macro definition section*******************************************/
 
 /********** Function declaration section **************************************/
-void mlsHardwareInfoDelay(uint32_t time_ms);
+/*
+ * @brief Base Control Init
+ * @param timeMs
+ * @return Error Code
+ */
+void mlsHardwareInfoDelay(uint32_t timeMs);
+
+/*
+ * @brief Start timer interrupt
+ * @param timBaseHandle
+ * @return Error Code
+ */
+mlsErrorCode_t mlsHardwareInfoStartTimerInterrupt(TIM_HandleTypeDef* timBaseHandle);
 
 #ifdef __cplusplus
 }

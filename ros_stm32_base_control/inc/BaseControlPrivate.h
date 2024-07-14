@@ -27,6 +27,8 @@ extern "C"
 /********** Include section ***************************************************/
 #include "stdbool.h"
 #include "stdint.h"
+
+#include "errorCode.h"
 /********** Constant  and compile switch definition section *******************/
 
 /********** Type definition section *******************************************/
@@ -77,6 +79,13 @@ void mlsBaseControlSendLogMsg(void);
  * @return None
  */
 void mlsBaseControlPublishImuMsg(void);
+
+/*
+ * @brief Publish IMU message to ROS node.
+ * @param timeBasehandle
+ * @return ErrorCode
+ */
+mlsErrorCode_t mlsBaseControlStartTimerInterrupt(TIM_HandleTypeDef* timBaseHandle);
 
 #ifdef __cplusplus
 }

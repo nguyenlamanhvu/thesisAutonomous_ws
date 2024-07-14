@@ -104,12 +104,12 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="HardwareControl"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="mcuLib"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="ros_stm32_base_control"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="roslib"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="ros_stm32_base_control"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="HardwareControl"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="mcuLib"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

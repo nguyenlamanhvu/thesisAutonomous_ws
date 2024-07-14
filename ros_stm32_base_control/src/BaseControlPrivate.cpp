@@ -37,8 +37,8 @@
 #include "tf/transform_broadcaster.h"
 #include "nav_msgs/Odometry.h"
 
-#include "BaseControlPrivate.h"
 #include "HardwareInfo.h"
+#include "BaseControlPrivate.h"
 /********** Local Constant and compile switch definition section **************/
 #define USE_ROS_LOG_DEBUG
 //#define USE_ROS_LOG_REPEAT_CONNECTED_DEBUG
@@ -47,6 +47,8 @@
 /********** Local Type definition section *************************************/
 
 /********** Local Macro definition section ************************************/
+
+/********** Global variable definition section ********************************/
 
 /********** Local (static) variable definition section ************************/
 ros::NodeHandle rosNodeHandle;    	/*!< ROS node handle */
@@ -196,6 +198,11 @@ void mlsBaseControlPublishImuMsg(void)
 
 	/* Publish IMU message*/
 	imuPub.publish(&imuMsg);
+}
+
+mlsErrorCode_t mlsBaseControlStartTimerInterrupt(TIM_HandleTypeDef* timBaseHandle)
+{
+	return mlsHardwareInfoStartTimerInterrupt(timBaseHandle);
 }
 /********** Class function implementation section *****************************/
 
