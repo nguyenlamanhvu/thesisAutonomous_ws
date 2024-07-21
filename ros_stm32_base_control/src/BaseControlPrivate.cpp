@@ -44,12 +44,18 @@
 //#define USE_ROS_LOG_REPEAT_CONNECTED_DEBUG
 
 #define ROS_TOPIC_IMU                       "imu"
-#define ROS_TOPIC_VEL						"motor_vel"
+#define ROS_TOPIC_VEL						"robot_vel"
+#define ROS_TOPIC_CALLBACK_VEL				"callback_robot_vel"
 /********** Local Type definition section *************************************/
 
 /********** Local Macro definition section ************************************/
 
 /********** Global variable definition section ********************************/
+
+/********** Local (static) function declaration section ***********************/
+static sensor_msgs::Imu BaseControlGetIMU(void);
+static ros::Time BaseControlGetROSTime(void);
+static void BaseControlCallbackCommandVelocity(const geometry_msgs::Twist &callbackVelMsg);
 
 /********** Local (static) variable definition section ************************/
 ros::NodeHandle rosNodeHandle;    	/*!< ROS node handle */
@@ -61,12 +67,13 @@ sensor_msgs::Imu imuMsg;           	/*!< ROS IMU message */
 geometry_msgs::Twist velocityMsg;	/*!< ROS velocity message*/
 nav_msgs::Odometry odometryMsg;		/*!< ROS odometry message*/
 
+ros::Subscriber<geometry_msgs::Twist> callbackVelSub(ROS_TOPIC_CALLBACK_VEL, BaseControlCallbackCommandVelocity);
+
 ros::Publisher imuPub(ROS_TOPIC_IMU, &imuMsg);
 ros::Publisher velPub(ROS_TOPIC_VEL, &velocityMsg);
 
-/********** Local (static) function declaration section ***********************/
-static sensor_msgs::Imu BaseControlGetIMU(void);
-static ros::Time BaseControlGetROSTime(void);
+float goalVelocity[2] = {0.0, 0.0};            	/*!< Velocity to control motor */
+float goalReceiveVelocity[2] = {0.0, 0.0};   	/*!< Velocity receive from "callback_robot_vel" topic */
 /********** Local function definition section *********************************/
 static sensor_msgs::Imu BaseControlGetIMU(void)
 {
@@ -121,6 +128,17 @@ static sensor_msgs::Imu BaseControlGetIMU(void)
 	return imuMsg_;
 }
 
+static void BaseControlCallbackCommandVelocity(const geometry_msgs::Twist &callbackVelMsg)
+{
+	/* Get goal velocity */
+	goalReceiveVelocity[LINEAR] = callbackVelMsg.linear.x;
+	goalReceiveVelocity[ANGULAR] = callbackVelMsg.angular.z;
+
+	/* Constrain velocity */
+
+
+}
+
 static ros::Time BaseControlGetROSTime(void)
 {
 	return rosNodeHandle.now();
@@ -130,8 +148,10 @@ void mlsBaseControlROSSetup(void)
 {
     rosNodeHandle.initNode(); /*!< Init ROS node handle */
 
+    rosNodeHandle.subscribe(callbackVelSub);	/*!< Subscribe to "callback_robot_vel" topic to get control robot velocity*/
+
     rosNodeHandle.advertise(imuPub);	/*!< Register the publisher to "imu" topic */
-    rosNodeHandle.advertise(velPub);	/*!< Register the publisher to "motor_vel" topic */
+    rosNodeHandle.advertise(velPub);	/*!< Register the publisher to "robot_vel" topic */
 }
 
 void mlsBaseControlSpinOnce(void)
@@ -208,10 +228,10 @@ void mlsBaseControlPublishImuMsg(void)
 void mlsBaseControlPublishMortorVelocityMsg(void)
 {
 	/* Get motor velocity */
-	velocityMsg.linear.x = 10;
-	velocityMsg.angular.z = 9.8;
+	velocityMsg.linear.x = goalVelocity[LINEAR];
+	velocityMsg.angular.z = goalVelocity[ANGULAR];
 
-	/* Publish motor velocity message to "motor_vel" topic*/
+	/* Publish motor velocity message to "robot_vel" topic*/
 	velPub.publish(&velocityMsg);
 }
 
@@ -219,6 +239,12 @@ void mlsBaseControlPublishDriveInformationMsg(void)
 {
 	odometryMsg.header.stamp = BaseControlGetROSTime();
 //	odometryMsg.header.frame_id = odomFrameId;
+}
+
+void mlsBaseControlUpdateGoalVel(void)
+{
+	goalVelocity[LINEAR] = goalReceiveVelocity[LINEAR];
+	goalVelocity[ANGULAR] = goalReceiveVelocity[ANGULAR];
 }
 
 mlsErrorCode_t mlsBaseControlStartTimerInterrupt(TIM_HandleTypeDef* timBaseHandle)

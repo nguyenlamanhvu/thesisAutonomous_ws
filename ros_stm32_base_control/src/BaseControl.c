@@ -50,8 +50,14 @@ mlsErrorCode_t mlsBaseControlInit(void)
 mlsErrorCode_t mlsBaseControlMain(void)
 {
 	mlsErrorCode_t errorCode = MLS_ERROR;
+	/* Control motor*/
+	if(gBaseControlTimeUpdateFlag[CONTROL_MOTOR_TIME_INDEX] == 1)
+	{
+		mlsBaseControlUpdateGoalVel();
+		gBaseControlTimeUpdateFlag[CONTROL_MOTOR_TIME_INDEX] = 0;
+	}
 
-	/* Publish motor velocity data to topic "motor_vel"*/
+	/* Publish motor velocity data to topic "robot_vel"*/
 	if(gBaseControlTimeUpdateFlag[VEL_PUBLISH_TIME_INDEX] == 1)
 	{
 		mlsBaseControlPublishMortorVelocityMsg();

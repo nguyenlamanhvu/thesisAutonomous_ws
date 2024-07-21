@@ -34,7 +34,8 @@ extern "C"
 /********** Type definition section *******************************************/
 
 /********** Macro definition section*******************************************/
-
+#define LINEAR	0
+#define ANGULAR	1
 /********** Function declaration section **************************************/
 /*
  * @brief Base Control ROS Setup
@@ -86,6 +87,13 @@ void mlsBaseControlPublishImuMsg(void);
  * @return None
  */
 void mlsBaseControlPublishMortorVelocityMsg(void);
+
+/*
+ * @brief Update goal velocity.
+ * @param None
+ * @return None
+ */
+void mlsBaseControlUpdateGoalVel(void);
 
 /*
  * @brief Publish IMU message to ROS node.
