@@ -61,8 +61,29 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		gBaseControlTimeUpdate[IMU_UPDATE_TIME_INDEX] = 0;
 	}
 
+    if(gBaseControlTimeUpdate[CONTROL_MOTOR_TIME_INDEX] >= 1000/CONTROL_MOTOR_FREQUENCY)
+    {
+    	gBaseControlTimeUpdateFlag[CONTROL_MOTOR_TIME_INDEX] = 1;
+		gBaseControlTimeUpdate[CONTROL_MOTOR_TIME_INDEX] = 0;
+    }
+
+    if(gBaseControlTimeUpdate[VEL_PUBLISH_TIME_INDEX] >= 1000/VEL_PUBLISH_FREQUENCY)
+	{
+		gBaseControlTimeUpdateFlag[VEL_PUBLISH_TIME_INDEX] = 1;
+		gBaseControlTimeUpdate[VEL_PUBLISH_TIME_INDEX] = 0;
+	}
+
+    if(gBaseControlTimeUpdate[DRIVE_INFORMATION_TIME_INDEX] >= 1000/DRIVE_INFORMATION_FREQUENCY)
+	{
+		gBaseControlTimeUpdateFlag[DRIVE_INFORMATION_TIME_INDEX] = 1;
+		gBaseControlTimeUpdate[DRIVE_INFORMATION_TIME_INDEX] = 0;
+	}
+
     gBaseControlTimeUpdate[IMU_PUBLISH_TIME_INDEX]++;
 	gBaseControlTimeUpdate[IMU_UPDATE_TIME_INDEX]++;
+	gBaseControlTimeUpdate[CONTROL_MOTOR_TIME_INDEX]++;
+	gBaseControlTimeUpdate[VEL_PUBLISH_TIME_INDEX]++;
+	gBaseControlTimeUpdate[DRIVE_INFORMATION_TIME_INDEX]++;
   }
 }
 /**@}*/

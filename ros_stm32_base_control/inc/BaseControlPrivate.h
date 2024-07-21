@@ -81,6 +81,13 @@ void mlsBaseControlSendLogMsg(void);
 void mlsBaseControlPublishImuMsg(void);
 
 /*
+ * @brief Publish motor velocity message to ROS node.
+ * @param None
+ * @return None
+ */
+void mlsBaseControlPublishMortorVelocityMsg(void);
+
+/*
  * @brief Publish IMU message to ROS node.
  * @param timeBasehandle
  * @return ErrorCode

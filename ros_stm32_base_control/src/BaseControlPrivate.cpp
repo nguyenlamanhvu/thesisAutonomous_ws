@@ -44,6 +44,7 @@
 //#define USE_ROS_LOG_REPEAT_CONNECTED_DEBUG
 
 #define ROS_TOPIC_IMU                       "imu"
+#define ROS_TOPIC_VEL						"motor_vel"
 /********** Local Type definition section *************************************/
 
 /********** Local Macro definition section ************************************/
@@ -56,9 +57,12 @@ char rosLogBuffer[100];          	/*!< ROS log message buffer */
 
 char imuFrameId[20];
 
-sensor_msgs::Imu imuMsg;           /*!< ROS IMU message */
+sensor_msgs::Imu imuMsg;           	/*!< ROS IMU message */
+geometry_msgs::Twist velocityMsg;	/*!< ROS velocity message*/
+nav_msgs::Odometry odometryMsg;		/*!< ROS odometry message*/
 
 ros::Publisher imuPub(ROS_TOPIC_IMU, &imuMsg);
+ros::Publisher velPub(ROS_TOPIC_VEL, &velocityMsg);
 
 /********** Local (static) function declaration section ***********************/
 static sensor_msgs::Imu BaseControlGetIMU(void);
@@ -127,6 +131,7 @@ void mlsBaseControlROSSetup(void)
     rosNodeHandle.initNode(); /*!< Init ROS node handle */
 
     rosNodeHandle.advertise(imuPub);	/*!< Register the publisher to "imu" topic */
+    rosNodeHandle.advertise(velPub);	/*!< Register the publisher to "motor_vel" topic */
 }
 
 void mlsBaseControlSpinOnce(void)
@@ -198,6 +203,22 @@ void mlsBaseControlPublishImuMsg(void)
 
 	/* Publish IMU message*/
 	imuPub.publish(&imuMsg);
+}
+
+void mlsBaseControlPublishMortorVelocityMsg(void)
+{
+	/* Get motor velocity */
+	velocityMsg.linear.x = 10;
+	velocityMsg.angular.z = 9.8;
+
+	/* Publish motor velocity message to "motor_vel" topic*/
+	velPub.publish(&velocityMsg);
+}
+
+void mlsBaseControlPublishDriveInformationMsg(void)
+{
+	odometryMsg.header.stamp = BaseControlGetROSTime();
+//	odometryMsg.header.frame_id = odomFrameId;
 }
 
 mlsErrorCode_t mlsBaseControlStartTimerInterrupt(TIM_HandleTypeDef* timBaseHandle)

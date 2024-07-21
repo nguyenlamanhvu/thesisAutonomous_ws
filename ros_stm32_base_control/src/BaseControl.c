@@ -51,6 +51,13 @@ mlsErrorCode_t mlsBaseControlMain(void)
 {
 	mlsErrorCode_t errorCode = MLS_ERROR;
 
+	/* Publish motor velocity data to topic "motor_vel"*/
+	if(gBaseControlTimeUpdateFlag[VEL_PUBLISH_TIME_INDEX] == 1)
+	{
+		mlsBaseControlPublishMortorVelocityMsg();
+		gBaseControlTimeUpdateFlag[VEL_PUBLISH_TIME_INDEX] = 0;
+	}
+
 	/* Publish IMU data to topic "imu"*/
 	if(gBaseControlTimeUpdateFlag[IMU_PUBLISH_TIME_INDEX] == 1)
 	{

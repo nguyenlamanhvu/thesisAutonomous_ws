@@ -34,10 +34,16 @@ extern "C"
 /* Time update index */
 #define IMU_PUBLISH_TIME_INDEX			0	/* Time index publish IMU information*/
 #define IMU_UPDATE_TIME_INDEX			1	/* Time index update IMU information*/
+#define CONTROL_MOTOR_TIME_INDEX		2	/* Time index control motor DC*/
+#define VEL_PUBLISH_TIME_INDEX			3	/* Time index publish velocity*/
+#define DRIVE_INFORMATION_TIME_INDEX	4	/* Time index publish drive information*/
 
 /* Frequency of publish/subscribe */
 #define IMU_PUBLISH_FREQUENCY			15		/* Frequency in Hz to publish IMU information*/
 #define IMU_UPDATE_FREQUENCY			200		/* Frequency in Hz to update IMU information*/
+#define CONTROL_MOTOR_FREQUENCY			60		/* Frequency in Hz to control DC motor*/
+#define VEL_PUBLISH_FREQUENCY			10		/* Frequency in Hz to publish velocity*/
+#define DRIVE_INFORMATION_FREQUENCY		10		/* Frequency in Hz to publish drive information*/
 /********** Function declaration section **************************************/
 
 /*
