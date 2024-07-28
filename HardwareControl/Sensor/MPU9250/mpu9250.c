@@ -40,7 +40,7 @@ typedef struct mpu9250{
     float 				gyroScalingFactor;	/*!< MPU9250 gyroscope scaling factor */
 } mpu9250_t;
 /********** Local Macro definition section ************************************/
-
+#define CONVERT_ACCEL_UNIT		9.80665
 /********** Local (static) variable definition ********************************/
 
 /********** Local (static) function declaration section ***********************/
@@ -231,9 +231,9 @@ mlsErrorCode_t mlsMpu9250GetAccelScale(mpu9250Handle_t handle, float *scaleX, fl
 	uint8_t accelRawData[6];
 	handle->i2cRead(MPU9250_ACCEL_XOUT_H, accelRawData, 6);
 
-	*scaleX = (float)((int16_t)((accelRawData[0] << 8) + accelRawData[1]) - handle->accelBias.xAxis) * handle->accelScalingFactor;
-	*scaleY = (float)((int16_t)((accelRawData[2] << 8) + accelRawData[3]) - handle->accelBias.yAxis) * handle->accelScalingFactor;
-	*scaleZ = (float)((int16_t)((accelRawData[4] << 8) + accelRawData[5]) - handle->accelBias.zAxis) * handle->accelScalingFactor;
+	*scaleX = (float)((int16_t)((accelRawData[0] << 8) + accelRawData[1]) - handle->accelBias.xAxis) * handle->accelScalingFactor * CONVERT_ACCEL_UNIT;
+	*scaleY = (float)((int16_t)((accelRawData[2] << 8) + accelRawData[3]) - handle->accelBias.yAxis) * handle->accelScalingFactor * CONVERT_ACCEL_UNIT;
+	*scaleZ = (float)((int16_t)((accelRawData[4] << 8) + accelRawData[5]) - handle->accelBias.zAxis) * handle->accelScalingFactor * CONVERT_ACCEL_UNIT;
 
 	return MLS_SUCCESS;
 }

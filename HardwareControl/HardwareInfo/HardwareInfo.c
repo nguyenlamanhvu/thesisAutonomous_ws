@@ -27,9 +27,10 @@
 /********** Local Type definition section *************************************/
 
 /********** Local Macro definition section ************************************/
-#define HW_IMU_I2C				hi2c1
+
 /********** Global variable definition section ********************************/
 extern uint8_t gBaseControlTimeUpdateFlag[10];
+extern I2C_HandleTypeDef hi2c1;
 /********** Local (static) variable definition ********************************/
 uint32_t gBaseControlTimeUpdate[10];
 /********** Local (static) function declaration section ***********************/
@@ -96,12 +97,12 @@ mlsErrorCode_t mlsHardwareInfoMpu9250ReadBytes(uint8_t regAddr, uint8_t *buffer,
 	mlsErrorCode_t errorCode = MLS_ERROR;
 
 	tmpBuffer[0] = regAddr;
-	errorCode = HAL_I2C_Master_Transmit(&HW_IMU_I2C, MPU9250_ADDR, tmpBuffer, 1, 100);
+	errorCode = HAL_I2C_Master_Transmit(&hi2c1, MPU9250_ADDR, tmpBuffer, 1, 100);
 	if(errorCode != MLS_SUCCESS)
 	{
 		return errorCode;
 	}
-	errorCode = HAL_I2C_Master_Receive(&HW_IMU_I2C, MPU9250_ADDR, buffer, len, 100);
+	errorCode = HAL_I2C_Master_Receive(&hi2c1, MPU9250_ADDR, buffer, len, 100);
 	return errorCode;
 }
 
@@ -115,7 +116,7 @@ mlsErrorCode_t mlsHardwareInfoMpu9250WriteBytes(uint8_t regAddr, uint8_t *buffer
 	{
 		bufferSend[i + 1] = buffer[i];
 	}
-	errorCode = HAL_I2C_Master_Transmit(&HW_IMU_I2C, MPU9250_ADDR, bufferSend, len + 1, 100);
+	errorCode = HAL_I2C_Master_Transmit(&hi2c1, MPU9250_ADDR, bufferSend, len + 1, 100);
 	return errorCode;
 }
 /**@}*/

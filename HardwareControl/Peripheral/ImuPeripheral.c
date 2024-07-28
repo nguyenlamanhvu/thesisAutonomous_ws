@@ -55,7 +55,7 @@ mlsErrorCode_t periphImuInit(void)
 		.dlpfConfig = MPU9250_250ACEL_4000GYRO_BW_HZ,
 		.sleepMode = MPU9250_DISABLE_SLEEP_MODE,
 		.fsSel = MPU9250_FS_SEL_2000,
-		.afsSel = MPU9250_AFS_SEL_8G,
+		.afsSel = MPU9250_AFS_SEL_2G,
 		.accelBias = {
 			.xAxis = DEFAULT_GYRO_BIAS_X,
 			.yAxis = DEFAULT_GYRO_BIAS_Y,

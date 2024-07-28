@@ -67,14 +67,6 @@ mlsErrorCode_t mlsBaseControlMain(void)
 		gBaseControlTimeUpdateFlag[VEL_PUBLISH_TIME_INDEX] = 0;
 	}
 
-	/* Update IMU */
-	if(gBaseControlTimeUpdateFlag[IMU_UPDATE_TIME_INDEX] == 1)
-	{
-		mlsBaseControlPublishImuMsg();
-		gBaseControlTimeUpdateFlag[IMU_UPDATE_TIME_INDEX] = 0;
-	}
-
-
 	/* Publish IMU data to topic "imu"*/
 	if(gBaseControlTimeUpdateFlag[IMU_PUBLISH_TIME_INDEX] == 1)
 	{
