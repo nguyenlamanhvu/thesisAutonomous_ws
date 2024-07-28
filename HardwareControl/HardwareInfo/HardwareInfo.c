@@ -17,13 +17,17 @@
  */
 
 /********** Include section ***************************************************/
+#include "i2c.h"
+#include "tim.h"
+#include "usart.h"
 #include "HardwareInfo.h"
+#include "mpu9250.h"
 /********** Local Constant and compile switch definition section **************/
 
 /********** Local Type definition section *************************************/
 
 /********** Local Macro definition section ************************************/
-
+#define HW_IMU_I2C				hi2c1
 /********** Global variable definition section ********************************/
 extern uint8_t gBaseControlTimeUpdateFlag[10];
 /********** Local (static) variable definition ********************************/
@@ -31,20 +35,6 @@ uint32_t gBaseControlTimeUpdate[10];
 /********** Local (static) function declaration section ***********************/
 
 /********** Local function definition section *********************************/
-
-/********** Global function definition section ********************************/
-void mlsHardwareInfoDelay(uint32_t timeMs)
-{
-	HAL_Delay(timeMs);
-}
-
-mlsErrorCode_t mlsHardwareInfoStartTimerInterrupt(TIM_HandleTypeDef* timBaseHandle)
-{
-	mlsErrorCode_t errorCode = MLS_ERROR;
-	errorCode = (mlsErrorCode_t)HAL_TIM_Base_Start_IT(timBaseHandle);
-	return errorCode;
-}
-
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   if(htim->Instance == TIM6)
@@ -85,5 +75,47 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	gBaseControlTimeUpdate[VEL_PUBLISH_TIME_INDEX]++;
 	gBaseControlTimeUpdate[DRIVE_INFORMATION_TIME_INDEX]++;
   }
+}
+
+/********** Global function definition section ********************************/
+void mlsHardwareInfoDelay(uint32_t timeMs)
+{
+	HAL_Delay(timeMs);
+}
+
+mlsErrorCode_t mlsHardwareInfoStartTimerInterrupt(TIM_HandleTypeDef* timBaseHandle)
+{
+	mlsErrorCode_t errorCode = MLS_ERROR;
+	errorCode = (mlsErrorCode_t)HAL_TIM_Base_Start_IT(timBaseHandle);
+	return errorCode;
+}
+
+mlsErrorCode_t mlsHardwareInfoMpu9250ReadBytes(uint8_t regAddr, uint8_t *buffer, uint16_t len)
+{
+	uint8_t tmpBuffer[1];
+	mlsErrorCode_t errorCode = MLS_ERROR;
+
+	tmpBuffer[0] = regAddr;
+	errorCode = HAL_I2C_Master_Transmit(&HW_IMU_I2C, MPU9250_ADDR, tmpBuffer, 1, 100);
+	if(errorCode != MLS_SUCCESS)
+	{
+		return errorCode;
+	}
+	errorCode = HAL_I2C_Master_Receive(&HW_IMU_I2C, MPU9250_ADDR, buffer, len, 100);
+	return errorCode;
+}
+
+mlsErrorCode_t mlsHardwareInfoMpu9250WriteBytes(uint8_t regAddr, uint8_t *buffer, uint16_t len)
+{
+	mlsErrorCode_t errorCode = MLS_ERROR;
+	uint8_t bufferSend[len+1];
+
+	bufferSend[0] = regAddr;
+	for(uint8_t i = 0; i < len; i++)
+	{
+		bufferSend[i + 1] = buffer[i];
+	}
+	errorCode = HAL_I2C_Master_Transmit(&HW_IMU_I2C, MPU9250_ADDR, bufferSend, len + 1, 100);
+	return errorCode;
 }
 /**@}*/

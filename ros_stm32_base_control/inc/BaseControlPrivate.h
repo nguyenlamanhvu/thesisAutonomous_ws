@@ -29,6 +29,7 @@ extern "C"
 #include "stdint.h"
 
 #include "errorCode.h"
+#include "Peripheral.h"
 /********** Constant  and compile switch definition section *******************/
 
 /********** Type definition section *******************************************/

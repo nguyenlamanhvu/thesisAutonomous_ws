@@ -41,8 +41,11 @@ extern "C" {
 /********** Type definition section *******************************************/
 typedef uint32_t mlsErrorCode_t;
 /********** Macro definition section*******************************************/
-#define MLS_SUCCESS 	HAL_OK
-#define MLS_ERROR 		HAL_ERROR
+#define MLS_SUCCESS 		HAL_OK
+#define MLS_ERROR 			HAL_ERROR
+#define MLS_BUSY			HAL_BUSY
+#define MLS_TIMEOUT			HAL_TIMEOUT
+#define MLS_ERROR_NULL_PTR 	(uint32_t)0xFFFE
 /********** Function declaration section **************************************/
 
 #ifdef __cplusplus

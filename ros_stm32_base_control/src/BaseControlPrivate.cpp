@@ -77,9 +77,13 @@ float goalReceiveVelocity[2] = {0.0, 0.0};   	/*!< Velocity receive from "callba
 /********** Local function definition section *********************************/
 static sensor_msgs::Imu BaseControlGetIMU(void)
 {
-	float accelX = 9.78, accelY = 0, accelZ = 0;
-	float gyroX = 0, gyroY = 0, gyroZ = 0;
+	float accelX, accelY, accelZ;
+	float gyroX, gyroY, gyroZ;
 	float q0 = 1, q1 = 0, q2 = 0, q3 = 0;
+
+	periphImuGetAccel(&accelX, &accelY, &accelZ);
+	periphImuGetGyro(&gyroX, &gyroY, &gyroZ);
+
 	sensor_msgs::Imu imuMsg_;
 
 	imuMsg_.angular_velocity.x = gyroX;

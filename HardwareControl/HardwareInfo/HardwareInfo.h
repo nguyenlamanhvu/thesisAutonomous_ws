@@ -29,7 +29,6 @@ extern "C"
 #include "errorCode.h"
 #include "BaseControl.h"
 #include "main.h"
-#include "stm32f4xx_hal_tim.h"
 /********** Constant  and compile switch definition section *******************/
 
 /********** Type definition section *******************************************/
@@ -50,6 +49,24 @@ void mlsHardwareInfoDelay(uint32_t timeMs);
  * @return Error Code
  */
 mlsErrorCode_t mlsHardwareInfoStartTimerInterrupt(TIM_HandleTypeDef* timBaseHandle);
+
+/*
+ * @brief Read data from MPU9250
+ * @param[1] address of register in MPU9250
+ * @param[2] buffer which store data
+ * @param[3] length of data
+ * @return Error Code
+ */
+mlsErrorCode_t mlsHardwareInfoMpu9250ReadBytes(uint8_t regAddr, uint8_t *buffer, uint16_t len);
+
+/*
+ * @brief Write data to MPU9250
+ * @param[1] address of register in MPU9250
+ * @param[2] buffer which store data
+ * @param[3] length of data
+ * @return Error Code
+ */
+mlsErrorCode_t mlsHardwareInfoMpu9250WriteBytes(uint8_t regAddr, uint8_t *buffer, uint16_t len);
 
 #ifdef __cplusplus
 }

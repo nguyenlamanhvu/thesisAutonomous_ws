@@ -38,6 +38,9 @@ extern TIM_HandleTypeDef htim6;
 mlsErrorCode_t mlsBaseControlInit(void)
 {
 	mlsErrorCode_t errorCode = MLS_ERROR;
+	/* Initialize peripherals */
+	errorCode = periphImuInit();
+
 	/* Start Timer Interrupt*/
 	errorCode = mlsBaseControlStartTimerInterrupt(&htim6);
 
@@ -63,6 +66,14 @@ mlsErrorCode_t mlsBaseControlMain(void)
 		mlsBaseControlPublishMortorVelocityMsg();
 		gBaseControlTimeUpdateFlag[VEL_PUBLISH_TIME_INDEX] = 0;
 	}
+
+	/* Update IMU */
+	if(gBaseControlTimeUpdateFlag[IMU_UPDATE_TIME_INDEX] == 1)
+	{
+		mlsBaseControlPublishImuMsg();
+		gBaseControlTimeUpdateFlag[IMU_UPDATE_TIME_INDEX] = 0;
+	}
+
 
 	/* Publish IMU data to topic "imu"*/
 	if(gBaseControlTimeUpdateFlag[IMU_PUBLISH_TIME_INDEX] == 1)
