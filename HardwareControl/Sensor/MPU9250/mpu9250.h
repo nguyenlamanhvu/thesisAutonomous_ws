@@ -257,8 +257,8 @@ mpu9250Handle_t mlsMpu9250Init(void);
  *      - MLS_SUCCESS: 		Success.
  *      - Others:           Fail.
  */
-
 mlsErrorCode_t mlsMpu9250SetConfig(mpu9250Handle_t handle, mpu9250Config_t config);
+
 /*
  * @brief   Configure MPU6050 to run.
  * @param 	handle: Handle structure.
@@ -416,6 +416,13 @@ mlsErrorCode_t mlsMpu9250GetGyroBias(mpu9250Handle_t handle, int16_t *biasX, int
  *      - Others:           Fail.
  */
 mlsErrorCode_t mlsMpu9250Calib6Axis(mpu9250Handle_t handle);
+
+/*
+ * @brief   Destroy MPU9250 pointer.
+ * @param   handle: Handle structure.
+ * @return	none
+ */
+void mlsMpu9250Destroy(mpu9250Handle_t handle);
 
 #ifdef __cplusplus
 }

@@ -68,6 +68,23 @@ mlsErrorCode_t mlsHardwareInfoMpu9250ReadBytes(uint8_t regAddr, uint8_t *buffer,
  */
 mlsErrorCode_t mlsHardwareInfoMpu9250WriteBytes(uint8_t regAddr, uint8_t *buffer, uint16_t len);
 
+/*
+ * @brief Read data from AK8963
+ * @param[1] address of register in AK8963
+ * @param[2] buffer which store data
+ * @param[3] length of data
+ * @return Error Code
+ */
+mlsErrorCode_t mlsHardwareInfoAk8963ReadBytes(uint8_t regAddr, uint8_t *buffer, uint16_t len);
+
+/*
+ * @brief Write data from AK8963
+ * @param[1] address of register in AK8963
+ * @param[2] buffer which store data
+ * @param[3] length of data
+ * @return Error Code
+ */
+mlsErrorCode_t mlsHardwareInfoAk8963WriteBytes(uint8_t regAddr, uint8_t *buffer, uint16_t len);
 #ifdef __cplusplus
 }
 #endif

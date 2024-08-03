@@ -22,6 +22,7 @@
 #include "usart.h"
 #include "HardwareInfo.h"
 #include "mpu9250.h"
+#include "ak8963.h"
 /********** Local Constant and compile switch definition section **************/
 
 /********** Local Type definition section *************************************/
@@ -117,6 +118,35 @@ mlsErrorCode_t mlsHardwareInfoMpu9250WriteBytes(uint8_t regAddr, uint8_t *buffer
 		bufferSend[i + 1] = buffer[i];
 	}
 	errorCode = HAL_I2C_Master_Transmit(&hi2c1, MPU9250_ADDR, bufferSend, len + 1, 100);
+	return errorCode;
+}
+
+mlsErrorCode_t mlsHardwareInfoAk8963ReadBytes(uint8_t regAddr, uint8_t *buffer, uint16_t len)
+{
+	uint8_t tmpBuffer[1];
+	mlsErrorCode_t errorCode = MLS_ERROR;
+
+	tmpBuffer[0] = regAddr;
+	errorCode = HAL_I2C_Master_Transmit(&hi2c1, AK8963_ADDRESS, tmpBuffer, 1, 100);
+	if(errorCode != MLS_SUCCESS)
+	{
+		return errorCode;
+	}
+	errorCode = HAL_I2C_Master_Receive(&hi2c1, AK8963_ADDRESS, buffer, len, 100);
+	return errorCode;
+}
+
+mlsErrorCode_t mlsHardwareInfoAk8963WriteBytes(uint8_t regAddr, uint8_t *buffer, uint16_t len)
+{
+	mlsErrorCode_t errorCode = MLS_ERROR;
+	uint8_t bufferSend[len+1];
+
+	bufferSend[0] = regAddr;
+	for(uint8_t i = 0; i < len; i++)
+	{
+		bufferSend[i + 1] = buffer[i];
+	}
+	errorCode = HAL_I2C_Master_Transmit(&hi2c1, AK8963_ADDRESS, bufferSend, len + 1, 100);
 	return errorCode;
 }
 /**@}*/

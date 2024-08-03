@@ -28,6 +28,7 @@
 #include "std_msgs/String.h"
 #include "std_msgs/UInt16.h"
 #include "sensor_msgs/Imu.h"
+#include "sensor_msgs/MagneticField.h"
 #include "sensor_msgs/JointState.h"
 #include "sensor_msgs/BatteryState.h"
 #include "sensor_msgs/MagneticField.h"
@@ -42,8 +43,10 @@
 /********** Local Constant and compile switch definition section **************/
 #define USE_ROS_LOG_DEBUG
 //#define USE_ROS_LOG_REPEAT_CONNECTED_DEBUG
+#define PUBLISH_MAG_DEBUG
 
 #define ROS_TOPIC_IMU                       "imu"
+#define ROS_TOPIC_MAG						"mag"
 #define ROS_TOPIC_VEL						"robot_vel"
 #define ROS_TOPIC_CALLBACK_VEL				"callback_robot_vel"
 /********** Local Type definition section *************************************/
@@ -54,6 +57,7 @@
 
 /********** Local (static) function declaration section ***********************/
 static sensor_msgs::Imu BaseControlGetIMU(void);
+static sensor_msgs::MagneticField BaseControlGetMag(void);
 static ros::Time BaseControlGetROSTime(void);
 static void BaseControlCallbackCommandVelocity(const geometry_msgs::Twist &callbackVelMsg);
 
@@ -64,12 +68,14 @@ char rosLogBuffer[100];          	/*!< ROS log message buffer */
 char imuFrameId[20];
 
 sensor_msgs::Imu imuMsg;           	/*!< ROS IMU message */
+sensor_msgs::MagneticField magMsg;	/*!< ROS Magnetic message*/
 geometry_msgs::Twist velocityMsg;	/*!< ROS velocity message*/
 nav_msgs::Odometry odometryMsg;		/*!< ROS odometry message*/
 
 ros::Subscriber<geometry_msgs::Twist> callbackVelSub(ROS_TOPIC_CALLBACK_VEL, BaseControlCallbackCommandVelocity);
 
 ros::Publisher imuPub(ROS_TOPIC_IMU, &imuMsg);
+ros::Publisher magPub(ROS_TOPIC_MAG, &magMsg);
 ros::Publisher velPub(ROS_TOPIC_VEL, &velocityMsg);
 
 float goalVelocity[2] = {0.0, 0.0};            	/*!< Velocity to control motor */
@@ -132,6 +138,31 @@ static sensor_msgs::Imu BaseControlGetIMU(void)
 	return imuMsg_;
 }
 
+static sensor_msgs::MagneticField BaseControlGetMag(void)
+{
+	float magX, magY, magZ;
+
+	periphImuGetMag(&magX, &magY, &magZ);
+
+	sensor_msgs::MagneticField magMsg_;
+
+	magMsg_.magnetic_field.x = magX;
+	magMsg_.magnetic_field.y = magY;
+	magMsg_.magnetic_field.z = magZ;
+
+	magMsg_.magnetic_field_covariance[0] = 0;
+	magMsg_.magnetic_field_covariance[1] = 0;
+	magMsg_.magnetic_field_covariance[2] = 0;
+	magMsg_.magnetic_field_covariance[3] = 0;
+	magMsg_.magnetic_field_covariance[4] = 0;
+	magMsg_.magnetic_field_covariance[5] = 0;
+	magMsg_.magnetic_field_covariance[6] = 0;
+	magMsg_.magnetic_field_covariance[7] = 0;
+	magMsg_.magnetic_field_covariance[8] = 0;
+
+	return magMsg_;
+}
+
 static void BaseControlCallbackCommandVelocity(const geometry_msgs::Twist &callbackVelMsg)
 {
 	/* Get goal velocity */
@@ -155,6 +186,7 @@ void mlsBaseControlROSSetup(void)
     rosNodeHandle.subscribe(callbackVelSub);	/*!< Subscribe to "callback_robot_vel" topic to get control robot velocity*/
 
     rosNodeHandle.advertise(imuPub);	/*!< Register the publisher to "imu" topic */
+    rosNodeHandle.advertise(magPub);	/*!< Register the publisher to "mag" topic */
     rosNodeHandle.advertise(velPub);	/*!< Register the publisher to "robot_vel" topic */
 }
 
@@ -227,6 +259,15 @@ void mlsBaseControlPublishImuMsg(void)
 
 	/* Publish IMU message*/
 	imuPub.publish(&imuMsg);
+
+#ifdef PUBLISH_MAG_DEBUG
+	/* Get Mag data*/
+	magMsg = BaseControlGetMag();
+	magMsg.header.stamp = BaseControlGetROSTime();
+
+	/* Publish Mag message*/
+	magPub.publish(&magMsg);
+#endif
 }
 
 void mlsBaseControlPublishMortorVelocityMsg(void)

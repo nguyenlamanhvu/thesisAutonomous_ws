@@ -396,4 +396,9 @@ mlsErrorCode_t mlsMpu9250Calib6Axis(mpu9250Handle_t handle)
 
 	return MLS_SUCCESS;
 }
+
+void mlsMpu9250Destroy(mpu9250Handle_t handle)
+{
+	free(handle);
+}
 /**@}*/
