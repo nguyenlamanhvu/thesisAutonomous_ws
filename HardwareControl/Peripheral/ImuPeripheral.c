@@ -62,7 +62,7 @@ ak8963Handle_t ak8963Handle = NULL;
 
 /********** Global function definition section ********************************/
 
-mlsErrorCode_t periphImuInit(void)
+mlsErrorCode_t mlsPeriphImuInit(void)
 {
 	mlsErrorCode_t errorCode = MLS_ERROR;
 #ifdef USE_ACC_GYRO_MPU9250
@@ -161,7 +161,7 @@ mlsErrorCode_t periphImuInit(void)
 #endif
 }
 
-mlsErrorCode_t periphImuGetAccel(float *accelX, float *accelY, float *accelZ)
+mlsErrorCode_t mlsPeriphImuGetAccel(float *accelX, float *accelY, float *accelZ)
 {
 	mlsErrorCode_t errorCode = MLS_ERROR;
 #ifdef USE_ACC_GYRO_MPU9250
@@ -172,7 +172,7 @@ mlsErrorCode_t periphImuGetAccel(float *accelX, float *accelY, float *accelZ)
 	return errorCode;
 }
 
-mlsErrorCode_t periphImuGetGyro(float *gyroX, float *gyroY, float *gyroZ)
+mlsErrorCode_t mlsPeriphImuGetGyro(float *gyroX, float *gyroY, float *gyroZ)
 {
 	mlsErrorCode_t errorCode = MLS_ERROR;
 #ifdef USE_ACC_GYRO_MPU9250
@@ -183,7 +183,7 @@ mlsErrorCode_t periphImuGetGyro(float *gyroX, float *gyroY, float *gyroZ)
 	return errorCode;
 }
 
-mlsErrorCode_t periphImuGetMag(float *magX, float *magY, float *magZ)
+mlsErrorCode_t mlsPeriphImuGetMag(float *magX, float *magY, float *magZ)
 {
 	mlsErrorCode_t errorCode = MLS_ERROR;
 #if defined(USE_ACC_GYRO_MPU9250) && defined(USE_MAGNETOMETER_MPU9250)

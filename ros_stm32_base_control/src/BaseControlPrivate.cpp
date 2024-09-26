@@ -50,7 +50,12 @@
 #define ROS_TOPIC_VEL						"robot_vel"
 #define ROS_TOPIC_CALLBACK_VEL				"callback_robot_vel"
 /********** Local Type definition section *************************************/
-
+#if (USE_UART_MATLAB == 1)
+typedef union {
+    float floatValue;
+    uint8_t byteArray[4];
+}FloatByteArray;
+#endif
 /********** Local Macro definition section ************************************/
 
 /********** Global variable definition section ********************************/
@@ -80,6 +85,12 @@ ros::Publisher velPub(ROS_TOPIC_VEL, &velocityMsg);
 
 float goalVelocity[2] = {0.0, 0.0};            	/*!< Velocity to control motor */
 float goalReceiveVelocity[2] = {0.0, 0.0};   	/*!< Velocity receive from "callback_robot_vel" topic */
+
+#if (USE_UART_MATLAB == 1)
+FloatByteArray uartData;
+uint8_t DataToSend[36];
+uint8_t i;
+#endif
 /********** Local function definition section *********************************/
 static sensor_msgs::Imu BaseControlGetIMU(void)
 {
@@ -87,8 +98,8 @@ static sensor_msgs::Imu BaseControlGetIMU(void)
 	float gyroX, gyroY, gyroZ;
 	float q0 = 1, q1 = 0, q2 = 0, q3 = 0;
 
-	periphImuGetAccel(&accelX, &accelY, &accelZ);
-	periphImuGetGyro(&gyroX, &gyroY, &gyroZ);
+	mlsPeriphImuGetAccel(&accelX, &accelY, &accelZ);
+	mlsPeriphImuGetGyro(&gyroX, &gyroY, &gyroZ);
 
 	sensor_msgs::Imu imuMsg_;
 
@@ -142,7 +153,7 @@ static sensor_msgs::MagneticField BaseControlGetMag(void)
 {
 	float magX, magY, magZ;
 
-	periphImuGetMag(&magX, &magY, &magZ);
+	mlsPeriphImuGetMag(&magX, &magY, &magZ);
 
 	sensor_msgs::MagneticField magMsg_;
 
@@ -296,6 +307,75 @@ mlsErrorCode_t mlsBaseControlStartTimerInterrupt(TIM_HandleTypeDef* timBaseHandl
 {
 	return mlsHardwareInfoStartTimerInterrupt(timBaseHandle);
 }
+
+#if (USE_UART_MATLAB == 1)
+mlsErrorCode_t mlsBaseControlUartPublishIMU(void)
+{
+	mlsErrorCode_t errorCode = MLS_ERROR;
+
+	float accelX, accelY, accelZ;
+	float gyroX, gyroY, gyroZ;
+	float magX, magY, magZ;
+
+	errorCode = mlsPeriphImuGetAccel(&accelX, &accelY, &accelZ);
+	if(errorCode != MLS_SUCCESS)
+	{
+		return errorCode;
+	}
+	uartData.floatValue = accelX;
+	for(i = 0; i < 4; i++) {
+		DataToSend[i+0] = uartData.byteArray[i];
+	}
+	uartData.floatValue = accelY;
+	for(i = 0; i < 4; i++) {
+		DataToSend[i+4] = uartData.byteArray[i];
+	}
+	uartData.floatValue = accelZ;
+	for(i = 0; i < 4; i++) {
+		DataToSend[i+8] = uartData.byteArray[i];
+	}
+
+	mlsPeriphImuGetGyro(&gyroX, &gyroY, &gyroZ);
+	if(errorCode != MLS_SUCCESS)
+	{
+		return errorCode;
+	}
+	uartData.floatValue = gyroX;
+	for(i = 0; i < 4; i++) {
+		DataToSend[i+12] = uartData.byteArray[i];
+	}
+	uartData.floatValue = gyroY;
+	for(i = 0; i < 4; i++) {
+		DataToSend[i+16] = uartData.byteArray[i];
+	}
+	uartData.floatValue = gyroZ;
+	for(i = 0; i < 4; i++) {
+		DataToSend[i+20] = uartData.byteArray[i];
+	}
+
+	mlsPeriphImuGetMag(&magX, &magY, &magZ);
+	if(errorCode != MLS_SUCCESS)
+	{
+		return errorCode;
+	}
+	uartData.floatValue = magX;
+	for(i = 0; i < 4; i++) {
+		DataToSend[i+24] = uartData.byteArray[i];
+	}
+	uartData.floatValue = magY;
+	for(i = 0; i < 4; i++) {
+		DataToSend[i+28] = uartData.byteArray[i];
+	}
+	uartData.floatValue = magZ;
+	for(i = 0; i < 4; i++) {
+		DataToSend[i+32] = uartData.byteArray[i];
+	}
+
+	errorCode = mlsPeriphUartSend(DataToSend);
+
+	return errorCode;
+}
+#endif
 /********** Class function implementation section *****************************/
 
 /**@}*/

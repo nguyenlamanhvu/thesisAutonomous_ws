@@ -32,6 +32,7 @@
 /********** Global variable definition section ********************************/
 extern uint8_t gBaseControlTimeUpdateFlag[10];
 extern I2C_HandleTypeDef hi2c1;
+extern UART_HandleTypeDef huart2;
 /********** Local (static) variable definition ********************************/
 uint32_t gBaseControlTimeUpdate[10];
 /********** Local (static) function declaration section ***********************/
@@ -47,7 +48,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     	gBaseControlTimeUpdate[IMU_PUBLISH_TIME_INDEX] = 0;
     }
 
-    if(gBaseControlTimeUpdate[IMU_PUBLISH_TIME_INDEX] >= 1000/IMU_UPDATE_FREQUENCY)
+    if(gBaseControlTimeUpdate[IMU_UPDATE_TIME_INDEX] >= 1000/IMU_UPDATE_FREQUENCY)
 	{
     	gBaseControlTimeUpdateFlag[IMU_UPDATE_TIME_INDEX] = 1;
 		gBaseControlTimeUpdate[IMU_UPDATE_TIME_INDEX] = 0;
@@ -147,6 +148,20 @@ mlsErrorCode_t mlsHardwareInfoAk8963WriteBytes(uint8_t regAddr, uint8_t *buffer,
 		bufferSend[i + 1] = buffer[i];
 	}
 	errorCode = HAL_I2C_Master_Transmit(&hi2c1, AK8963_ADDRESS, bufferSend, len + 1, 100);
+	return errorCode;
+}
+
+mlsErrorCode_t mlsHardwareInfoUartReadBytes(uint8_t *buffer, uint16_t len)
+{
+	mlsErrorCode_t errorCode = MLS_ERROR;
+	errorCode = HAL_UART_Receive_DMA(&huart2, buffer, len);
+	return errorCode;
+}
+
+mlsErrorCode_t mlsHardwareInfoUartWriteBytes(uint8_t *buffer, uint16_t len)
+{
+	mlsErrorCode_t errorCode = MLS_ERROR;
+	errorCode = HAL_UART_Transmit_DMA(&huart2, buffer, len);
 	return errorCode;
 }
 /**@}*/

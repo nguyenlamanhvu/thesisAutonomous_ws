@@ -26,6 +26,7 @@ extern "C"
 
 /********** Include section ***************************************************/
 #include "errorCode.h"
+#include "compilerSwitch.h"
 /********** Constant  and compile switch definition section *******************/
 #define USE_MAGNETOMETER_MPU9250
 #define USE_ACC_GYRO_MPU9250
@@ -44,7 +45,7 @@ extern "C"
  *      - Handle structure: Success.
  *      - Others:           Fail.
  */
-mlsErrorCode_t periphImuInit(void);
+mlsErrorCode_t mlsPeriphImuInit(void);
 
 /*
  * @brief   Get accelerometer data.
@@ -58,7 +59,7 @@ mlsErrorCode_t periphImuInit(void);
  *      - MLS_SUCCESS: 		Success.
  *      - Others:           Fail.
  */
-mlsErrorCode_t periphImuGetAccel(float *accelX, float *accelY, float *accelZ);
+mlsErrorCode_t mlsPeriphImuGetAccel(float *accelX, float *accelY, float *accelZ);
 
 /*
  * @brief   Get gyroscope data.
@@ -72,7 +73,7 @@ mlsErrorCode_t periphImuGetAccel(float *accelX, float *accelY, float *accelZ);
  *      - MLS_SUCCESS: 		Success.
  *      - Others:           Fail.
  */
-mlsErrorCode_t periphImuGetGyro(float *gyroX, float *gyroY, float *gyroZ);
+mlsErrorCode_t mlsPeriphImuGetGyro(float *gyroX, float *gyroY, float *gyroZ);
 
 /*
  * @brief   Get magnetometer data.
@@ -86,7 +87,39 @@ mlsErrorCode_t periphImuGetGyro(float *gyroX, float *gyroY, float *gyroZ);
  *      - MLS_SUCCESS: 		Success.
  *      - Others:           Fail.
  */
-mlsErrorCode_t periphImuGetMag(float *magX, float *magY, float *magZ);
+mlsErrorCode_t mlsPeriphImuGetMag(float *magX, float *magY, float *magZ);
+
+/*
+ * @brief   Initialize UART with default parameters.
+ * @note    This function must be called first.
+ * @param   None.
+ * @return
+ *      - Handle structure: Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphUartInit(void);
+
+/*
+ * @brief   Send data by using uart.
+ *
+ * @param   data: Data string.
+ *
+ * @return
+ *      - MLS_SUCCESS: 		Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphUartSend(uint8_t *data);
+
+/*
+ * @brief   Read data by using uart.
+ *
+ * @param   data: Data string.
+ *
+ * @return
+ *      - MLS_SUCCESS: 		Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphUartRead(uint8_t *data);
 
 #ifdef __cplusplus
 }

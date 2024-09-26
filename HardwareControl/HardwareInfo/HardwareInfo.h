@@ -29,6 +29,7 @@ extern "C"
 #include "errorCode.h"
 #include "BaseControl.h"
 #include "main.h"
+#include "compilerSwitch.h"
 /********** Constant  and compile switch definition section *******************/
 
 /********** Type definition section *******************************************/
@@ -85,6 +86,22 @@ mlsErrorCode_t mlsHardwareInfoAk8963ReadBytes(uint8_t regAddr, uint8_t *buffer, 
  * @return Error Code
  */
 mlsErrorCode_t mlsHardwareInfoAk8963WriteBytes(uint8_t regAddr, uint8_t *buffer, uint16_t len);
+
+/*
+ * @brief Read data from UART
+ * @param[1] buffer which store data
+ * @param[2] length of data
+ * @return Error Code
+ */
+mlsErrorCode_t mlsHardwareInfoUartReadBytes(uint8_t *buffer, uint16_t len);
+
+/*
+ * @brief Write data from UART
+ * @param[1] buffer which store data
+ * @param[2] length of data
+ * @return Error Code
+ */
+mlsErrorCode_t mlsHardwareInfoUartWriteBytes(uint8_t *buffer, uint16_t len);
 #ifdef __cplusplus
 }
 #endif

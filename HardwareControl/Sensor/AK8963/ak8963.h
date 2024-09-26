@@ -28,6 +28,7 @@ extern "C"
 #include "errorCode.h"
 #include "stdlib.h"
 #include "string.h"
+#include "compilerSwitch.h"
 /********** Constant  and compile switch definition section *******************/
 
 /********** Type definition section *******************************************/

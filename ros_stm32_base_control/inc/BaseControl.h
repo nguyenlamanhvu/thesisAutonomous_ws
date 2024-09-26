@@ -26,6 +26,7 @@ extern "C"
 
 /********** Include section ***************************************************/
 #include "errorCode.h"
+#include "compilerSwitch.h"
 /********** Constant  and compile switch definition section *******************/
 
 /********** Type definition section *******************************************/

@@ -30,6 +30,7 @@ extern "C"
 
 #include "errorCode.h"
 #include "Peripheral.h"
+#include "compilerSwitch.h"
 /********** Constant  and compile switch definition section *******************/
 
 /********** Type definition section *******************************************/
@@ -102,6 +103,15 @@ void mlsBaseControlUpdateGoalVel(void);
  * @return ErrorCode
  */
 mlsErrorCode_t mlsBaseControlStartTimerInterrupt(TIM_HandleTypeDef* timBaseHandle);
+
+#if (USE_UART_MATLAB == 1)
+/*
+ * @brief Publish IMU message to Matlab.
+ * @param None
+ * @return ErrorCode
+ */
+mlsErrorCode_t mlsBaseControlUartPublishIMU(void);
+#endif
 
 #ifdef __cplusplus
 }

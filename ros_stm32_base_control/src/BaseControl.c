@@ -39,20 +39,24 @@ mlsErrorCode_t mlsBaseControlInit(void)
 {
 	mlsErrorCode_t errorCode = MLS_ERROR;
 	/* Initialize peripherals */
-	errorCode = periphImuInit();
+	errorCode = mlsPeriphImuInit();
 
 	/* Start Timer Interrupt*/
 	errorCode = mlsBaseControlStartTimerInterrupt(&htim6);
-
+#if (USE_UART_ROS == 1)
 	/* Initialize ROS*/
 	mlsBaseControlROSSetup();
-
+#elif (USE_UART_MATLAB == 1)
+	errorCode = mlsPeriphUartInit();
+#endif
 	return errorCode;
 }
 
 mlsErrorCode_t mlsBaseControlMain(void)
 {
 	mlsErrorCode_t errorCode = MLS_ERROR;
+
+#if (USE_UART_ROS == 1)
 	/* Control motor*/
 	if(gBaseControlTimeUpdateFlag[CONTROL_MOTOR_TIME_INDEX] == 1)
 	{
@@ -84,6 +88,16 @@ mlsErrorCode_t mlsBaseControlMain(void)
 	mlsBaseControlWaitSerialLink(mlsBaseControlConnectStatus());
 
 	errorCode = MLS_SUCCESS;
+
+#elif (USE_UART_MATLAB == 1)
+	/* Publish IMU data to MATLAB*/
+	if(gBaseControlTimeUpdateFlag[IMU_PUBLISH_TIME_INDEX] == 1)
+	{
+		mlsBaseControlUartPublishIMU();
+		gBaseControlTimeUpdateFlag[IMU_PUBLISH_TIME_INDEX] = 0;
+	}
+#endif
+
 	return errorCode;
 }
 
