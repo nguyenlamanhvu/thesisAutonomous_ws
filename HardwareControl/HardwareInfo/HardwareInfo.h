@@ -102,6 +102,77 @@ mlsErrorCode_t mlsHardwareInfoUartReadBytes(uint8_t *buffer, uint16_t len);
  * @return Error Code
  */
 mlsErrorCode_t mlsHardwareInfoUartWriteBytes(uint8_t *buffer, uint16_t len);
+
+/*
+ * @brief Set duty cycle of Left Motor
+ * @param[1] duty cycle
+ * @return Error Code
+ */
+mlsErrorCode_t mlsHardwareInfoLeftMotorSetDuty(float duty);
+
+/*
+ * @brief Set frequency of Left Motor
+ * @param[1] frequency
+ * @return Error Code
+ */
+mlsErrorCode_t mlsHardwareInfoLeftMotorSetFrequency(uint32_t freq);
+
+/*
+ * @brief Start Left Motor
+ * @param	none
+ * @return Error Code
+ */
+mlsErrorCode_t mlsHardwareInfoLeftMotorStart(void);
+
+/*
+ * @brief Stop Left Motor
+ * @param	none
+ * @return Error Code
+ */
+mlsErrorCode_t mlsHardwareInfoLeftMotorStop(void);
+
+/*
+ * @brief Set direction of Left Motor
+ * @param[1] direction
+ * @return Error Code
+ */
+mlsErrorCode_t mlsHardwareInfoLeftMotorSetDir(uint8_t dir);
+
+/*
+ * @brief Set duty cycle of Right Motor
+ * @param[1] duty cycle
+ * @return Error Code
+ */
+mlsErrorCode_t mlsHardwareInfoRightMotorSetDuty(float duty);
+
+/*
+ * @brief Set frequency of Right Motor
+ * @param[1] frequency
+ * @return Error Code
+ */
+mlsErrorCode_t mlsHardwareInfoRightMotorSetFrequency(uint32_t freq);
+
+/*
+ * @brief Start Right Motor
+ * @param	none
+ * @return Error Code
+ */
+mlsErrorCode_t mlsHardwareInfoRightMotorStart(void);
+
+/*
+ * @brief Stop Right Motor
+ * @param	none
+ * @return Error Code
+ */
+mlsErrorCode_t mlsHardwareInfoRightMotorStop(void);
+
+/*
+ * @brief Set direction of Right Motor
+ * @param[1] direction
+ * @return Error Code
+ */
+mlsErrorCode_t mlsHardwareInfoRightMotorSetDir(uint8_t dir);
+
 #ifdef __cplusplus
 }
 #endif

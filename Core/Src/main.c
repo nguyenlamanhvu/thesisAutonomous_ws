@@ -93,6 +93,7 @@ int main(void)
   MX_I2C1_Init();
   MX_USART2_UART_Init();
   MX_TIM6_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
   mlsErrorCode_t errorCode = MLS_ERROR;
 
@@ -114,7 +115,7 @@ int main(void)
 	  {
 		return 0;
 	  }
-	  /* USER CODE END WHILE */
+    /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
   }
