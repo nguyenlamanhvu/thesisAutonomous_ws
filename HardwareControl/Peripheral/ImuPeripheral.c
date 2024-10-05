@@ -21,6 +21,7 @@
 #include "HardwareInfo.h"
 #include "mpu9250.h"
 #include "ak8963.h"
+#include "Madgwick.h"
 /********** Local Constant and compile switch definition section **************/
 
 /********** Local Type definition section *************************************/
@@ -47,6 +48,11 @@
 #endif
 
 #endif
+
+#ifdef USE_MADGWICK_FILTER
+#define DEFAULT_MADGWICK_BETA  				0.1f
+#define DEFAULT_MADGWICK_SAMPLE_FREQ  		1000.0f
+#endif
 /********** Local (static) variable definition ********************************/
 #ifdef USE_ACC_GYRO_MPU9250
 mpu9250Handle_t mpu9250Handle = NULL;
@@ -56,12 +62,15 @@ ak8963Handle_t ak8963Handle = NULL;
 #endif
 
 #endif
+
+#ifdef USE_MADGWICK_FILTER
+imuMadgwickHandle_t imuMadgwickHandle = NULL;
+#endif
 /********** Local (static) function declaration section ***********************/
 
 /********** Local function definition section *********************************/
 
 /********** Global function definition section ********************************/
-
 mlsErrorCode_t mlsPeriphImuInit(void)
 {
 	mlsErrorCode_t errorCode = MLS_ERROR;
@@ -161,6 +170,29 @@ mlsErrorCode_t mlsPeriphImuInit(void)
 #endif
 }
 
+mlsErrorCode_t mlsPeriphImuFilterInit(void)
+{
+#ifdef USE_MADGWICK_FILTER
+	/* Config madgwick filter */
+	mlsErrorCode_t errorCode = MLS_ERROR;
+
+	imuMadgwickHandle = mlsImuMadgwickInit();
+	if(imuMadgwickHandle == NULL)
+	{
+		return MLS_ERROR_NULL_PTR;
+	}
+
+	imuMadgwickCfg_t imuMadgwickCfg = {
+			.beta = DEFAULT_MADGWICK_BETA,
+			.sampleFreq = DEFAULT_MADGWICK_SAMPLE_FREQ
+	};
+
+	errorCode = mlsImuMadgwickSetConfig(imuMadgwickHandle, imuMadgwickCfg);
+
+	return errorCode;
+#endif
+}
+
 mlsErrorCode_t mlsPeriphImuGetAccel(float *accelX, float *accelY, float *accelZ)
 {
 	mlsErrorCode_t errorCode = MLS_ERROR;
@@ -194,4 +226,59 @@ mlsErrorCode_t mlsPeriphImuGetMag(float *magX, float *magY, float *magZ)
 	return errorCode;
 }
 
+mlsErrorCode_t mlsPeriphImuUpdateQuat(void)
+{
+	mlsErrorCode_t errorCode = MLS_ERROR;
+	if ((mpu9250Handle == NULL) || (imuMadgwickHandle == NULL))
+	{
+		return MLS_ERROR_NULL_PTR;
+	}
+
+	float accelX, accelY, accelZ;
+	float gyroX, gyroY, gyroZ;
+	float magX, magY, magZ;
+
+	errorCode = mlsMpu9250GetAccelScale(mpu9250Handle, &accelX, &accelY, &accelZ);
+	if(errorCode != MLS_SUCCESS)
+	{
+		return errorCode;
+	}
+
+	errorCode = mlsMpu9250GetGyroScale(mpu9250Handle, &gyroX, &gyroY, &gyroZ);
+	if(errorCode != MLS_SUCCESS)
+	{
+		return errorCode;
+	}
+
+	errorCode = mlsAk8963GetMagScale(ak8963Handle, &magX, &magY, &magZ);
+	if(errorCode != MLS_SUCCESS)
+	{
+		return errorCode;
+	}
+
+	errorCode = mlsImuMadgwickUpdate9Dof(imuMadgwickHandle, gyroX, gyroY, gyroZ, accelX, accelY, accelZ, magX, magY, magZ);
+	if(errorCode != MLS_SUCCESS)
+	{
+		return errorCode;
+	}
+
+	return errorCode;
+}
+
+mlsErrorCode_t mlsPeriphImuGetQuat(float *q0, float *q1, float *q2, float *q3)
+{
+	mlsErrorCode_t errorCode = MLS_ERROR;
+	if (imuMadgwickHandle == NULL)
+	{
+		return MLS_ERROR_NULL_PTR;
+	}
+
+	errorCode = mlsImuMadgwickGetQuaternion(imuMadgwickHandle, q0, q1, q2, q3);
+	if(errorCode != MLS_SUCCESS)
+	{
+		return errorCode;
+	}
+
+	return errorCode;
+}
 /**@}*/

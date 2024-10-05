@@ -40,6 +40,7 @@ mlsErrorCode_t mlsBaseControlInit(void)
 	mlsErrorCode_t errorCode = MLS_ERROR;
 	/* Initialize peripherals */
 	errorCode = mlsPeriphImuInit();
+	errorCode = mlsPeriphImuFilterInit();
 
 	/* Start Timer Interrupt*/
 	errorCode = mlsBaseControlStartTimerInterrupt(&htim6);
@@ -71,6 +72,13 @@ mlsErrorCode_t mlsBaseControlMain(void)
 		gBaseControlTimeUpdateFlag[VEL_PUBLISH_TIME_INDEX] = 0;
 	}
 
+	/* Update IMU */
+	if(gBaseControlTimeUpdateFlag[IMU_UPDATE_FREQUENCY] == 1)
+	{
+		mlsBaseControlUpdateImu();
+		gBaseControlTimeUpdateFlag[IMU_UPDATE_FREQUENCY] = 0;
+	}
+
 	/* Publish IMU data to topic "imu"*/
 	if(gBaseControlTimeUpdateFlag[IMU_PUBLISH_TIME_INDEX] == 1)
 	{
@@ -90,6 +98,13 @@ mlsErrorCode_t mlsBaseControlMain(void)
 	errorCode = MLS_SUCCESS;
 
 #elif (USE_UART_MATLAB == 1)
+	/* Update IMU */
+	if(gBaseControlTimeUpdateFlag[IMU_UPDATE_FREQUENCY] == 1)
+	{
+		mlsBaseControlUpdateImu();
+		gBaseControlTimeUpdateFlag[IMU_UPDATE_FREQUENCY] = 0;
+	}
+
 	/* Publish IMU data to MATLAB*/
 	if(gBaseControlTimeUpdateFlag[IMU_PUBLISH_TIME_INDEX] == 1)
 	{

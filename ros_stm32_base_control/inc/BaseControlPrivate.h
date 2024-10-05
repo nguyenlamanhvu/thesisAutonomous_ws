@@ -113,6 +113,13 @@ mlsErrorCode_t mlsBaseControlStartTimerInterrupt(TIM_HandleTypeDef* timBaseHandl
 mlsErrorCode_t mlsBaseControlUartPublishIMU(void);
 #endif
 
+/*
+ * @brief Update IMU data by using filter.
+ * @param None
+ * @return ErrorCode
+ */
+mlsErrorCode_t mlsBaseControlUpdateImu(void);
+
 #ifdef __cplusplus
 }
 #endif

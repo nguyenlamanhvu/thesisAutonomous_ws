@@ -41,10 +41,6 @@
 #include "HardwareInfo.h"
 #include "BaseControlPrivate.h"
 /********** Local Constant and compile switch definition section **************/
-#define USE_ROS_LOG_DEBUG
-//#define USE_ROS_LOG_REPEAT_CONNECTED_DEBUG
-#define PUBLISH_MAG_DEBUG
-
 #define ROS_TOPIC_IMU                       "imu"
 #define ROS_TOPIC_MAG						"mag"
 #define ROS_TOPIC_VEL						"robot_vel"
@@ -96,10 +92,11 @@ static sensor_msgs::Imu BaseControlGetIMU(void)
 {
 	float accelX, accelY, accelZ;
 	float gyroX, gyroY, gyroZ;
-	float q0 = 1, q1 = 0, q2 = 0, q3 = 0;
+	float q0, q1, q2, q3;
 
 	mlsPeriphImuGetAccel(&accelX, &accelY, &accelZ);
 	mlsPeriphImuGetGyro(&gyroX, &gyroY, &gyroZ);
+	mlsPeriphImuGetQuat(&q0, &q1, &q2, &q3);
 
 	sensor_msgs::Imu imuMsg_;
 
@@ -279,6 +276,20 @@ void mlsBaseControlPublishImuMsg(void)
 	/* Publish Mag message*/
 	magPub.publish(&magMsg);
 #endif
+
+#ifdef USE_ROS_LOG_DEBUG
+	float q0, q1, q2, q3;
+	float roll, pitch, yaw;
+
+	mlsPeriphImuGetQuat(&q0, &q1, &q2, &q3);
+
+    roll = 180.0 / 3.14 * atan2(2 * (q0 * q1 + q2 * q3), 1 - 2 * (q1 * q1 + q2 * q2));
+    pitch = 180.0 / 3.14 * asin(2 * (q0 * q2 - q3 * q1));
+    yaw = 180.0 / 3.14 * atan2f(q0 * q3 + q1 * q2, 0.5f - q2 * q2 - q3 * q3);
+
+    sprintf(rosLogBuffer, "roll: %7.4f\tpitch: %7.4f\tyaw: %7.4f\t", roll, pitch, yaw);
+    rosNodeHandle.loginfo(rosLogBuffer);
+#endif
 }
 
 void mlsBaseControlPublishMortorVelocityMsg(void)
@@ -376,6 +387,11 @@ mlsErrorCode_t mlsBaseControlUartPublishIMU(void)
 	return errorCode;
 }
 #endif
+
+mlsErrorCode_t mlsBaseControlUpdateImu(void)
+{
+	return mlsPeriphImuUpdateQuat();
+}
 /********** Class function implementation section *****************************/
 
 /**@}*/

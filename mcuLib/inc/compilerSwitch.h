@@ -26,8 +26,15 @@ extern "C" {
 /********** Include section ***************************************************/
 
 /********** Constant  and compile switch definition section *******************/
-#define USE_UART_ROS		0
-#define USE_UART_MATLAB		1
+#define USE_UART_ROS		1
+#define USE_UART_MATLAB		0
+#define USE_MAGNETOMETER_MPU9250
+#define USE_ACC_GYRO_MPU9250
+//#define USE_IMU_ADIS16488
+#define USE_MADGWICK_FILTER
+#define USE_ROS_LOG_DEBUG
+//#define USE_ROS_LOG_REPEAT_CONNECTED_DEBUG
+#define PUBLISH_MAG_DEBUG
 /********** Type definition section *******************************************/
 
 /********** Macro definition section*******************************************/

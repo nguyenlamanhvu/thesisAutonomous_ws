@@ -28,9 +28,6 @@ extern "C"
 #include "errorCode.h"
 #include "compilerSwitch.h"
 /********** Constant  and compile switch definition section *******************/
-#define USE_MAGNETOMETER_MPU9250
-#define USE_ACC_GYRO_MPU9250
-//#define USE_IMU_ADIS16488
 
 /********** Type definition section *******************************************/
 
@@ -120,6 +117,42 @@ mlsErrorCode_t mlsPeriphUartSend(uint8_t *data);
  *      - Others:           Fail.
  */
 mlsErrorCode_t mlsPeriphUartRead(uint8_t *data);
+
+/*
+ * @brief   Initialize IMU Filter with default parameters.
+ * @note    This function must be called first.
+ * @param   None.
+ * @return
+ *      - Handle structure: Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphImuFilterInit(void);
+
+/*
+ * @brief   Update quaternion data.
+ *
+ * @param   None
+ *
+ * @return
+ *      - MLS_SUCCESS: 		Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphImuUpdateQuat(void);
+
+/*
+ * @brief   Get quaternion data.
+ *
+ * @param   handle: Handle structure.
+ * @param   q0: quaternion 0.
+ * @param   q1: quaternion 1.
+ * @param   q2: quaternion 2.
+ * @param   q3: quaternion 3.
+ *
+ * @return
+ *      - MLS_SUCCESS: 		Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphImuGetQuat(float *q0, float *q1, float *q2, float *q3);
 
 #ifdef __cplusplus
 }
