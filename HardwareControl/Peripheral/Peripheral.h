@@ -154,6 +154,104 @@ mlsErrorCode_t mlsPeriphImuUpdateQuat(void);
  */
 mlsErrorCode_t mlsPeriphImuGetQuat(float *q0, float *q1, float *q2, float *q3);
 
+/*
+ * @brief   Initialize Motor with default parameters.
+ * @note    This function must be called first.
+ * @param   None.
+ * @return
+ *      - Handle structure: Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphMotorInit(void);
+
+/*
+ * @brief   Start Left Motor.
+ *
+ * @param   None.
+ *
+ * @return
+ *      - Handle structure: Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphMotorLeftStart(void);
+
+/*
+ * @brief   Stop Left Motor.
+ *
+ * @param   None.
+ *
+ * @return
+ *      - Handle structure: Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphMotorLeftStop(void);
+
+/*
+ * @brief   Set Speed of Left Motor.
+ *
+ * @param   speed: Speed of Motor.
+ *
+ * @return
+ *      - Handle structure: Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphMotorLeftSetSpeed(float speed);
+
+/*
+ * @brief   Set Direction of Left Motor.
+ *
+ * @param   Dir: Direction of Motor.
+ *
+ * @return
+ *      - Handle structure: Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphMotorLeftSetDir(uint8_t dir);
+
+/*
+ * @brief   Start Right Motor.
+ *
+ * @param   None.
+ *
+ * @return
+ *      - Handle structure: Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphMotorRightStart(void);
+
+/*
+ * @brief   Stop Right Motor.
+ *
+ * @param   None.
+ *
+ * @return
+ *      - Handle structure: Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphMotorRightStop(void);
+
+/*
+ * @brief   Set Speed of Right Motor.
+ *
+ * @param   speed: Speed of Motor.
+ *
+ * @return
+ *      - Handle structure: Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphMotorRightSetSpeed(float speed);
+
+/*
+ * @brief   Set Direction of Right Motor.
+ *
+ * @param   Dir: Direction of Motor.
+ *
+ * @return
+ *      - Handle structure: Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphMotorRightSetDir(uint8_t dir);
+
 #ifdef __cplusplus
 }
 #endif
