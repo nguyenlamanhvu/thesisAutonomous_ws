@@ -173,6 +173,76 @@ mlsErrorCode_t mlsHardwareInfoRightMotorStop(void);
  */
 mlsErrorCode_t mlsHardwareInfoRightMotorSetDir(uint8_t dir);
 
+/*
+ * @brief Start Left Encoder
+ * @param	none
+ * @return Error Code
+ */
+mlsErrorCode_t mlsHardwareInfoLeftEncoderStart(void);
+
+/*
+ * @brief Stop Left Encoder
+ * @param	none
+ * @return Error Code
+ */
+mlsErrorCode_t mlsHardwareInfoLeftEncoderStop(void);
+
+/*
+ * @brief Set counter of Left Encoder
+ * @param[1] Counter value
+ * @return Error Code
+ */
+mlsErrorCode_t mlsHardwareInfoLeftEncoderSetCounter(uint32_t value);
+
+/*
+ * @brief Get counter of Left Encoder
+ * @param[1] Pointer counter value
+ * @return Error Code
+ */
+mlsErrorCode_t mlsHardwareInfoLeftEncoderGetCounter(uint32_t *value);
+
+/*
+ * @brief Set mode of Left Encoder
+ * @param[1] Encoder mode
+ * @return Error Code
+ */
+mlsErrorCode_t mlsHardwareInfoLeftEncoderSetMode(uint8_t mode);
+
+/*
+ * @brief Start Right Encoder
+ * @param	none
+ * @return Error Code
+ */
+mlsErrorCode_t mlsHardwareInfoRightEncoderStart(void);
+
+/*
+ * @brief Stop Right Encoder
+ * @param	none
+ * @return Error Code
+ */
+mlsErrorCode_t mlsHardwareInfoRightEncoderStop(void);
+
+/*
+ * @brief Set counter of Right Encoder
+ * @param[1] Counter value
+ * @return Error Code
+ */
+mlsErrorCode_t mlsHardwareInfoRightEncoderSetCounter(uint32_t value);
+
+/*
+ * @brief Get counter of Right Encoder
+ * @param[1] Pointer counter value
+ * @return Error Code
+ */
+mlsErrorCode_t mlsHardwareInfoRightEncoderGetCounter(uint32_t *value);
+
+/*
+ * @brief Set mode of Right Encoder
+ * @param[1] Encoder mode
+ * @return Error Code
+ */
+mlsErrorCode_t mlsHardwareInfoRightEncoderSetMode(uint8_t mode);
+
 #ifdef __cplusplus
 }
 #endif

@@ -42,6 +42,15 @@
 #define HW_RIGHTMOTOR_TIM_CLK_FREQ 		168000000
 #define HW_RIGHTMOTOR_GPIO 				GPIOE
 #define HW_RIGHTMOTOR_GPIO_PIN 			GPIO_PIN_12
+
+#define HW_LEFT_ENCODER_TIM_HANDLE 		htim2
+#define HW_LEFT_ENCODER_TIM 			TIM2
+
+#define HW_RIGHT_ENCODER_TIM_HANDLE 	htim3
+#define HW_RIGHT_ENCODER_TIM 			TIM3
+
+#define ENCODER_COUNTER_MODE_UP  		0
+#define ENCODER_COUNTER_MODE_DOWN  		1
 /********** Local Macro definition section ************************************/
 
 /********** Global variable definition section ********************************/
@@ -49,6 +58,8 @@ extern uint8_t gBaseControlTimeUpdateFlag[10];
 extern I2C_HandleTypeDef hi2c1;
 extern UART_HandleTypeDef huart2;
 extern TIM_HandleTypeDef htim1;
+extern TIM_HandleTypeDef htim2;
+extern TIM_HandleTypeDef htim3;
 /********** Local (static) variable definition ********************************/
 uint32_t gBaseControlTimeUpdate[10];
 /********** Local (static) function declaration section ***********************/
@@ -291,6 +302,114 @@ mlsErrorCode_t mlsHardwareInfoRightMotorStop(void)
 mlsErrorCode_t mlsHardwareInfoRightMotorSetDir(uint8_t dir)
 {
 	HAL_GPIO_WritePin(HW_RIGHTMOTOR_GPIO, HW_RIGHTMOTOR_GPIO_PIN, dir);
+
+	return MLS_SUCCESS;
+}
+
+mlsErrorCode_t mlsHardwareInfoLeftEncoderStart(void)
+{
+	HAL_TIM_Base_Start(&HW_LEFT_ENCODER_TIM_HANDLE);
+
+	return MLS_SUCCESS;
+}
+
+mlsErrorCode_t mlsHardwareInfoLeftEncoderStop(void)
+{
+	HAL_TIM_Base_Stop(&HW_LEFT_ENCODER_TIM_HANDLE);
+
+	return MLS_SUCCESS;
+}
+
+mlsErrorCode_t mlsHardwareInfoLeftEncoderSetCounter(uint32_t value)
+{
+	__HAL_TIM_SET_COUNTER(&HW_LEFT_ENCODER_TIM_HANDLE, value);
+
+	return MLS_SUCCESS;
+}
+
+mlsErrorCode_t mlsHardwareInfoLeftEncoderGetCounter(uint32_t *value)
+{
+	*value = __HAL_TIM_GET_COUNTER(&HW_LEFT_ENCODER_TIM_HANDLE);
+
+	return MLS_SUCCESS;
+}
+
+mlsErrorCode_t mlsHardwareInfoLeftEncoderSetMode(uint8_t mode)
+{
+	/* Reconfigure timer init parameters */
+	HW_LEFT_ENCODER_TIM_HANDLE.Instance                 = HW_LEFT_ENCODER_TIM;
+	HW_LEFT_ENCODER_TIM_HANDLE.Init.Prescaler           = 0;
+	if (mode == ENCODER_COUNTER_MODE_UP) {
+		HW_LEFT_ENCODER_TIM_HANDLE.Init.CounterMode         = TIM_COUNTERMODE_UP;
+	} else {
+		HW_LEFT_ENCODER_TIM_HANDLE.Init.CounterMode         = TIM_COUNTERMODE_DOWN;
+	}
+	HW_LEFT_ENCODER_TIM_HANDLE.Init.Period              = __HAL_TIM_GET_AUTORELOAD(&HW_LEFT_ENCODER_TIM_HANDLE);
+	HW_LEFT_ENCODER_TIM_HANDLE.Init.ClockDivision       = TIM_CLOCKDIVISION_DIV1;
+	HW_LEFT_ENCODER_TIM_HANDLE.Init.AutoReloadPreload   = TIM_AUTORELOAD_PRELOAD_DISABLE;
+
+	/* Keep last counter value */
+	uint32_t last_counter_val = __HAL_TIM_GET_COUNTER(&HW_LEFT_ENCODER_TIM_HANDLE);
+
+	/* Set timer counter mode */
+	HAL_TIM_Base_Init(&HW_LEFT_ENCODER_TIM_HANDLE);
+
+	/* Set timer last counter value */
+	__HAL_TIM_SET_COUNTER(&HW_LEFT_ENCODER_TIM_HANDLE, last_counter_val);
+
+	return MLS_SUCCESS;
+}
+
+mlsErrorCode_t mlsHardwareInfoRightEncoderStart(void)
+{
+	HAL_TIM_Base_Start(&HW_RIGHT_ENCODER_TIM_HANDLE);
+
+	return MLS_SUCCESS;
+}
+
+mlsErrorCode_t mlsHardwareInfoRightEncoderStop(void)
+{
+	HAL_TIM_Base_Stop(&HW_RIGHT_ENCODER_TIM_HANDLE);
+
+	return MLS_SUCCESS;
+}
+
+mlsErrorCode_t mlsHardwareInfoRightEncoderSetCounter(uint32_t value)
+{
+	__HAL_TIM_SET_COUNTER(&HW_RIGHT_ENCODER_TIM_HANDLE, value);
+
+	return MLS_SUCCESS;
+}
+
+mlsErrorCode_t mlsHardwareInfoRightEncoderGetCounter(uint32_t *value)
+{
+	*value = __HAL_TIM_GET_COUNTER(&HW_RIGHT_ENCODER_TIM_HANDLE);
+
+	return MLS_SUCCESS;
+}
+
+mlsErrorCode_t mlsHardwareInfoRightEncoderSetMode(uint8_t mode)
+{
+	/* Reconfigure timer init parameters */
+	HW_RIGHT_ENCODER_TIM_HANDLE.Instance                 = HW_RIGHT_ENCODER_TIM;
+	HW_RIGHT_ENCODER_TIM_HANDLE.Init.Prescaler           = 0;
+	if (mode == ENCODER_COUNTER_MODE_UP) {
+		HW_LEFT_ENCODER_TIM_HANDLE.Init.CounterMode         = TIM_COUNTERMODE_UP;
+	} else {
+		HW_LEFT_ENCODER_TIM_HANDLE.Init.CounterMode         = TIM_COUNTERMODE_DOWN;
+	}
+	HW_RIGHT_ENCODER_TIM_HANDLE.Init.Period              = __HAL_TIM_GET_AUTORELOAD(&HW_RIGHT_ENCODER_TIM_HANDLE);
+	HW_RIGHT_ENCODER_TIM_HANDLE.Init.ClockDivision       = TIM_CLOCKDIVISION_DIV1;
+	HW_RIGHT_ENCODER_TIM_HANDLE.Init.AutoReloadPreload   = TIM_AUTORELOAD_PRELOAD_DISABLE;
+
+	/* Keep last counter value */
+	uint32_t last_counter_val = __HAL_TIM_GET_COUNTER(&HW_RIGHT_ENCODER_TIM_HANDLE);
+
+	/* Set timer counter mode */
+	HAL_TIM_Base_Init(&HW_RIGHT_ENCODER_TIM_HANDLE);
+
+	/* Set timer last counter value */
+	__HAL_TIM_SET_COUNTER(&HW_RIGHT_ENCODER_TIM_HANDLE, last_counter_val);
 
 	return MLS_SUCCESS;
 }
