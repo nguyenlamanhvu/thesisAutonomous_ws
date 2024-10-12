@@ -20,6 +20,7 @@
 #include "Peripheral.h"
 #include "Motor.h"
 #include "HardwareInfo.h"
+#include "Encoder.h"
 /********** Local Constant and compile switch definition section **************/
 
 /********** Local Type definition section *************************************/
@@ -39,6 +40,10 @@
 #define MOTORLEFT_DIR_BACKWARD      1
 #define MOTORRIGHT_DIR_FORWARD      1
 #define MOTORRIGHT_DIR_BACKWARD     0
+
+/* Encoder counter mode index */
+#define ENCODER_COUNTER_MODE_UP  		0
+#define ENCODER_COUNTER_MODE_DOWN  		1
 
 /* Step driver parameters */
 #define MICROSTEP_DIV               19.7        /*!< Step driver microstep divider */
@@ -60,6 +65,8 @@
 /********** Local (static) variable definition ********************************/
 motorHandle_t motorLeftHandle = NULL;
 motorHandle_t motorRightHandle = NULL;
+encoderHandle_t encoderLeftHandle = NULL;
+encoderHandle_t encoderRightHandle = NULL;
 /********** Local (static) function declaration section ***********************/
 
 /********** Local function definition section *********************************/
@@ -176,14 +183,14 @@ mlsErrorCode_t mlsPeriphMotorLeftSetSpeed(float speed)
 	if (speed < 0)
 	{
 		mlsMotorSetDir(motorLeftHandle, MOTORLEFT_DIR_BACKWARD);
-		//encoder
+		mlsEncoderSetMode(encoderLeftHandle, ENCODER_COUNTER_MODE_DOWN);
 		mlsMotorSetPwmFreq(motorLeftHandle, (uint32_t)(-speed*VEL2FREQ));
 		mlsMotorSetPwmDuty(motorLeftHandle, DEFAULT_MOTOR_DUTY);
 	}
 	else
 	{
 		mlsMotorSetDir(motorLeftHandle, MOTORLEFT_DIR_FORWARD);
-		//encoder
+		mlsEncoderSetMode(encoderLeftHandle, ENCODER_COUNTER_MODE_UP);
 		mlsMotorSetPwmFreq(motorLeftHandle, (uint32_t)(-speed*VEL2FREQ));
 		mlsMotorSetPwmDuty(motorLeftHandle, DEFAULT_MOTOR_DUTY);
 	}
@@ -256,14 +263,14 @@ mlsErrorCode_t mlsPeriphMotorRightSetSpeed(float speed)
 	if (speed < 0)
 	{
 		mlsMotorSetDir(motorRightHandle, MOTORRIGHT_DIR_BACKWARD);
-		//encoder
+		mlsEncoderSetMode(encoderRightHandle, ENCODER_COUNTER_MODE_DOWN);
 		mlsMotorSetPwmFreq(motorRightHandle, (uint32_t)(-speed*VEL2FREQ));
 		mlsMotorSetPwmDuty(motorRightHandle, DEFAULT_MOTOR_DUTY);
 	}
 	else
 	{
 		mlsMotorSetDir(motorRightHandle, MOTORRIGHT_DIR_FORWARD);
-		//encoder
+		mlsEncoderSetMode(encoderRightHandle, ENCODER_COUNTER_MODE_UP);
 		mlsMotorSetPwmFreq(motorRightHandle, (uint32_t)(-speed*VEL2FREQ));
 		mlsMotorSetPwmDuty(motorRightHandle, DEFAULT_MOTOR_DUTY);
 	}
@@ -286,6 +293,96 @@ mlsErrorCode_t mlsPeriphMotorRightSetDir(uint8_t dir)
 	{
 		return errorCode;
 	}
+
+	return MLS_SUCCESS;
+}
+
+mlsErrorCode_t mlsPeriphEncoderInit(void)
+{
+	mlsErrorCode_t errorCode = MLS_ERROR;
+	/* Initialize left encoder */
+	encoderLeftHandle = mlsEncoderInit();
+	if(encoderLeftHandle == NULL)
+	{
+		return MLS_ERROR_NULL_PTR;
+	}
+
+	encoderConfig_t encoderLeftConfig = {
+			.maxReload = NUM_PULSE_PER_ROUND * MICROSTEP_DIV,
+			.startEnc = mlsHardwareInfoLeftEncoderStart,
+			.stopEnc = mlsHardwareInfoLeftEncoderStop,
+			.setCounter = mlsHardwareInfoLeftEncoderSetCounter,
+			.getCounter = mlsHardwareInfoLeftEncoderGetCounter,
+			.setMode = mlsHardwareInfoLeftEncoderSetMode,
+	};
+
+	errorCode = mlsEncoderSetConfig(encoderLeftHandle, encoderLeftConfig);
+	if (errorCode != MLS_SUCCESS)
+	{
+		return errorCode;
+	}
+
+	/* Initialize right encoder */
+	encoderRightHandle = mlsEncoderInit();
+	if(encoderRightHandle == NULL)
+	{
+		return MLS_ERROR_NULL_PTR;
+	}
+
+	encoderConfig_t encoderRightConfig = {
+			.maxReload = NUM_PULSE_PER_ROUND * MICROSTEP_DIV,
+			.startEnc = mlsHardwareInfoRightEncoderStart,
+			.stopEnc = mlsHardwareInfoRightEncoderStop,
+			.setCounter = mlsHardwareInfoRightEncoderSetCounter,
+			.getCounter = mlsHardwareInfoRightEncoderGetCounter,
+			.setMode = mlsHardwareInfoRightEncoderSetMode,
+	};
+
+	errorCode = mlsEncoderSetConfig(encoderRightHandle, encoderRightConfig);
+	if (errorCode != MLS_SUCCESS)
+	{
+		return errorCode;
+	}
+
+	mlsEncoderSetMode(encoderLeftHandle, ENCODER_COUNTER_MODE_UP);
+	mlsEncoderSetMode(encoderRightHandle, ENCODER_COUNTER_MODE_UP);
+
+	mlsEncoderStart(encoderLeftHandle);
+	mlsEncoderStart(encoderRightHandle);
+
+	return MLS_SUCCESS;
+}
+
+mlsErrorCode_t mlsPeriphEncoderLeftGetTick(uint32_t *tick)
+{
+	if(encoderLeftHandle == NULL)
+	{
+		return MLS_ERROR_NULL_PTR;
+	}
+
+	uint32_t temp;
+
+	mlsEncoderGetCounter(encoderLeftHandle, &temp);
+	mlsEncoderSetCounter(encoderLeftHandle, MICROSTEP_DIV * NUM_PULSE_PER_ROUND / 2);
+
+	*tick = temp - (MICROSTEP_DIV * NUM_PULSE_PER_ROUND / 2);
+
+	return MLS_SUCCESS;
+}
+
+mlsErrorCode_t mlsPeriphEncoderRightGetTick(uint32_t *tick)
+{
+	if(encoderRightHandle == NULL)
+	{
+		return MLS_ERROR_NULL_PTR;
+	}
+
+	uint32_t temp;
+
+	mlsEncoderGetCounter(encoderRightHandle, &temp);
+	mlsEncoderSetCounter(encoderRightHandle, MICROSTEP_DIV * NUM_PULSE_PER_ROUND / 2);
+
+	*tick = temp - (MICROSTEP_DIV * NUM_PULSE_PER_ROUND / 2);
 
 	return MLS_SUCCESS;
 }
