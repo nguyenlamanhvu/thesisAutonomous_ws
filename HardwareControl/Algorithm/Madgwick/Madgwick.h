@@ -31,8 +31,9 @@ extern "C"
 #include "errorCode.h"
 #include "compilerSwitch.h"
 /********** Constant  and compile switch definition section *******************/
-typedef struct imuMadgwick *imuMadgwickHandle_t;
+
 /********** Type definition section *******************************************/
+typedef struct imuMadgwick *imuMadgwickHandle_t;
 /**
  * @brief   Configuration structure.
  */

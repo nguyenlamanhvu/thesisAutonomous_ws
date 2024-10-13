@@ -31,9 +31,28 @@ extern "C"
 #include "main.h"
 #include "compilerSwitch.h"
 /********** Constant  and compile switch definition section *******************/
-
+#if (USE_UART_MATLAB == 1)
+#define UART_MAX_LENGTH 	36
+#elif (USE_UART_GUI == 1)
+#define UART_MAX_LENGTH 	20
+#endif
 /********** Type definition section *******************************************/
+typedef enum {
+	GUI_SET_LEFT_RUN_MODE = 		0x01,
+	GUI_SET_LEFT_STOP_MODE = 		0x02,
+	GUI_SET_RIGHT_RUN_MODE = 		0x03,
+	GUI_SET_RIGHT_STOP_MODE = 		0x04,
+	GUI_RECEIVE_SPEED_MODE = 		0x05,
+	GUI_RECEIVE_PARAMETER_MODE = 	0x06,
+} guiMode_t;
 
+typedef struct {
+	uint8_t 	header;							/*!< Header of data frame */
+	uint8_t 	length;							/*!< Length of data (exclude header, length, mode, footer) */
+	guiMode_t	mode;							/*!< Mode */
+	uint8_t		dataBuff[UART_MAX_LENGTH - 4];	/*!< Data buffer */
+	uint8_t		footer;							/*!< Footer of data frame */
+} dataFrame_t;
 /********** Macro definition section*******************************************/
 
 /********** Function declaration section **************************************/

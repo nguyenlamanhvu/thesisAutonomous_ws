@@ -111,6 +111,28 @@ mlsErrorCode_t mlsBaseControlStartTimerInterrupt(TIM_HandleTypeDef* timBaseHandl
  * @return ErrorCode
  */
 mlsErrorCode_t mlsBaseControlUartPublishIMU(void);
+
+#elif (USE_UART_GUI == 1)
+/*
+ * @brief Publish parameter to GUI.
+ * @param None
+ * @return ErrorCode
+ */
+mlsErrorCode_t mlsBaseControlGuiPublishParameter(void);
+
+/*
+ * @brief Publish message to GUI.
+ * @param None
+ * @return ErrorCode
+ */
+mlsErrorCode_t mlsBaseControlGuiPublishData(void);
+
+/*
+ * @brief Receive message from GUI.
+ * @param None
+ * @return ErrorCode
+ */
+mlsErrorCode_t mlsBaseControlGuiReceiveData(void);
 #endif
 
 /*

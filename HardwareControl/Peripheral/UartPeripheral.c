@@ -20,23 +20,30 @@
 #include "Peripheral.h"
 #include "HardwareInfo.h"
 #include "Matlab.h"
+#include "Gui.h"
 /********** Local Constant and compile switch definition section **************/
 
 /********** Local Type definition section *************************************/
 
 /********** Local Macro definition section ************************************/
-#define MATLAB_MAX_LENGTH 	36
+
 /********** Local (static) variable definition ********************************/
 #if (USE_UART_MATLAB == 1)
 matlabHandle_t matlabHandle = NULL;
+#elif (USE_UART_GUI == 1)
+guiHandle_t guiHandle = NULL;
 #endif
 /********** Local (static) function declaration section ***********************/
 
 /********** Local function definition section *********************************/
 
 /********** Global variable definition ********************************/
-uint8_t *gBufferSend;
-uint8_t *gBufferRead;
+#if (USE_UART_MATLAB == 1)
+
+#elif (USE_UART_GUI == 1)
+extern dataFrame_t gGuiRxDataFrame;
+extern dataFrame_t gGuiTxDataFrame;
+#endif
 /********** Global function definition section ********************************/
 mlsErrorCode_t mlsPeriphUartInit(void)
 {
@@ -50,16 +57,49 @@ mlsErrorCode_t mlsPeriphUartInit(void)
 	}
 
 	matlabConfig_t matlabConfig = {
-			.bufferRead = gBufferRead,
-			.bufferSend = gBufferSend,
-			.bufferReadLength = MATLAB_MAX_LENGTH,
-			.bufferSendLength = MATLAB_MAX_LENGTH,
+			.bufferRead = &gGuiRxDataFrame,
+			.bufferSend = &gGuiTxDataFrame,
+			.bufferReadLength = UART_MAX_LENGTH,
+			.bufferSendLength = UART_MAX_LENGTH,
 			.matlabRead = mlsHardwareInfoUartReadBytes,
 			.matlabWrite = mlsHardwareInfoUartWriteBytes
 	};
 
 	/* Set configuration for UART MATLAB*/
 	errorCode = mlsMatlabSetConfig(matlabHandle, matlabConfig);
+	if(errorCode != MLS_SUCCESS)
+	{
+		return errorCode;
+	}
+
+	/* Configure for UART MATLAB*/
+	errorCode = mlsMatlabConfig(matlabHandle);
+#elif (USE_UART_GUI == 1)
+	/* Initialize GUI pointer*/
+	guiHandle = mlsGuiInit();
+	if(guiHandle == NULL)
+	{
+		return MLS_ERROR_NULL_PTR;
+	}
+
+	guiConfig_t guiConfig = {
+			.bufferRead = &gGuiRxDataFrame,
+			.bufferSend = &gGuiTxDataFrame,
+			.bufferReadLength = UART_MAX_LENGTH,
+			.bufferSendLength = UART_MAX_LENGTH,
+			.guiRead = mlsHardwareInfoUartReadBytes,
+			.guiWrite = mlsHardwareInfoUartWriteBytes
+	};
+
+	/* Set configuration for UART GUI*/
+	errorCode = mlsGuiSetConfig(guiHandle, guiConfig);
+	if(errorCode != MLS_SUCCESS)
+	{
+		return errorCode;
+	}
+
+	/* Configure for UART GUI*/
+	errorCode = mlsGuiConfig(guiHandle);
 #endif
 	return errorCode;
 }
@@ -71,6 +111,10 @@ mlsErrorCode_t mlsPeriphUartSend(uint8_t *data)
 	matlabHandle->bufferSendLength = sizeof(data);
 	memcpy(matlabHandle->bufferSend,data,matlabHandle->bufferSendLength);
 	errorCode = mlsMatlabSendData(matlabHandle);
+#elif (USE_UART_GUI == 1)
+	guiHandle->bufferSendLength = sizeof(data);
+	memcpy((uint8_t*)guiHandle->bufferSend, data, guiHandle->bufferSendLength);
+	errorCode = mlsGuiSendData(guiHandle);
 #endif
 	return errorCode;
 }
@@ -82,6 +126,8 @@ mlsErrorCode_t mlsPeriphUartRead(uint8_t *data)
 	matlabHandle->bufferReadLength = sizeof(data);
 	memcpy(matlabHandle->bufferRead,data,matlabHandle->bufferReadLength);
 	errorCode = mlsMatlabReadData(matlabHandle);
+#elif (USE_UART_GUI == 1)
+
 #endif
 	return errorCode;
 }

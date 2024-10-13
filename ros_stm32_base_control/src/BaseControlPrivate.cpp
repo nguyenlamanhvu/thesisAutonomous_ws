@@ -46,7 +46,7 @@
 #define ROS_TOPIC_VEL						"robot_vel"
 #define ROS_TOPIC_CALLBACK_VEL				"callback_robot_vel"
 /********** Local Type definition section *************************************/
-#if (USE_UART_MATLAB == 1)
+#if (USE_UART_MATLAB == 1 || USE_UART_GUI == 1)
 typedef union {
     float floatValue;
     uint8_t byteArray[4];
@@ -55,7 +55,12 @@ typedef union {
 /********** Local Macro definition section ************************************/
 
 /********** Global variable definition section ********************************/
+#if (USE_UART_MATLAB == 1)
 
+#elif (USE_UART_GUI == 1)
+extern dataFrame_t gGuiRxDataFrame;
+extern dataFrame_t gGuiTxDataFrame;
+#endif
 /********** Local (static) function declaration section ***********************/
 static sensor_msgs::Imu BaseControlGetIMU(void);
 static sensor_msgs::MagneticField BaseControlGetMag(void);
@@ -86,6 +91,8 @@ float goalReceiveVelocity[2] = {0.0, 0.0};   	/*!< Velocity receive from "callba
 FloatByteArray uartData;
 uint8_t DataToSend[36];
 uint8_t i;
+#elif (USE_UART_GUI == 1)
+FloatByteArray uartData;
 #endif
 /********** Local function definition section *********************************/
 static sensor_msgs::Imu BaseControlGetIMU(void)
@@ -385,6 +392,128 @@ mlsErrorCode_t mlsBaseControlUartPublishIMU(void)
 	errorCode = mlsPeriphUartSend(DataToSend);
 
 	return errorCode;
+}
+#elif (USE_UART_GUI == 1)
+mlsErrorCode_t mlsBaseControlGuiPublishParameter(void)
+{
+	mlsErrorCode_t errorCode = MLS_ERROR;
+
+	//Will finish when I have time.
+
+	return errorCode;
+}
+
+mlsErrorCode_t mlsBaseControlGuiPublishData(void)
+{
+	mlsErrorCode_t errorCode = MLS_ERROR;
+
+	gGuiTxDataFrame.header = 0x0A;
+	gGuiTxDataFrame.mode = GUI_RECEIVE_SPEED_MODE;
+
+	if(gGuiRxDataFrame.mode == GUI_SET_LEFT_RUN_MODE || gGuiRxDataFrame.mode == GUI_SET_LEFT_STOP_MODE)
+	{
+		errorCode = mlsPeriphMotorLeftPIDGetRealValue(&uartData.floatValue);
+		if(errorCode != MLS_SUCCESS)
+		{
+			return errorCode;
+		}
+		memcpy(gGuiTxDataFrame.dataBuff, uartData.byteArray, sizeof(uartData.byteArray));
+		gGuiTxDataFrame.length = sizeof(uartData.byteArray);
+	}
+	else if(gGuiRxDataFrame.mode == GUI_SET_RIGHT_RUN_MODE || gGuiRxDataFrame.mode == GUI_SET_RIGHT_STOP_MODE)
+	{
+		errorCode = mlsPeriphMotorRightPIDGetRealValue(&uartData.floatValue);
+		if(errorCode != MLS_SUCCESS)
+		{
+			return errorCode;
+		}
+		memcpy(gGuiTxDataFrame.dataBuff, uartData.byteArray, sizeof(uartData.byteArray));
+		gGuiTxDataFrame.length = sizeof(uartData.byteArray);
+	}
+
+	gGuiTxDataFrame.footer = 0x06;
+
+	return MLS_SUCCESS;
+}
+
+mlsErrorCode_t mlsBaseControlGuiReceiveData(void)
+{
+	mlsErrorCode_t errorCode = MLS_ERROR;
+
+	switch(gGuiRxDataFrame.mode)
+	{
+	case GUI_SET_LEFT_STOP_MODE:
+		mlsPeriphMotorLeftStop();
+		break;
+	case GUI_SET_LEFT_RUN_MODE:
+		mlsPeriphMotorLeftStart();
+		memcpy(uartData.byteArray, gGuiRxDataFrame.dataBuff, 4);
+		errorCode = mlsPeriphMotorLeftPIDSetSetPoint(uartData.floatValue);
+		if(errorCode != MLS_SUCCESS)
+		{
+			return errorCode;
+		}
+
+		memcpy(uartData.byteArray, gGuiRxDataFrame.dataBuff + 4, 4);
+		errorCode = mlsPeriphMotorLeftPIDSetKp(uartData.floatValue);
+		if(errorCode != MLS_SUCCESS)
+		{
+			return errorCode;
+		}
+
+		memcpy(uartData.byteArray, gGuiRxDataFrame.dataBuff + 8, 4);
+		errorCode = mlsPeriphMotorLeftPIDSetKi(uartData.floatValue);
+		if(errorCode != MLS_SUCCESS)
+		{
+			return errorCode;
+		}
+
+		memcpy(uartData.byteArray, gGuiRxDataFrame.dataBuff + 12, 4);
+		errorCode = mlsPeriphMotorLeftPIDSetKd(uartData.floatValue);
+		if(errorCode != MLS_SUCCESS)
+		{
+			return errorCode;
+		}
+		break;
+	case GUI_SET_RIGHT_STOP_MODE:
+		mlsPeriphMotorRightStop();
+		break;
+	case GUI_SET_RIGHT_RUN_MODE:
+		mlsPeriphMotorRightStart();
+		memcpy(uartData.byteArray, gGuiRxDataFrame.dataBuff, 4);
+		errorCode = mlsPeriphMotorRightPIDSetSetPoint(uartData.floatValue);
+		if(errorCode != MLS_SUCCESS)
+		{
+			return errorCode;
+		}
+
+		memcpy(uartData.byteArray, gGuiRxDataFrame.dataBuff + 4, 4);
+		errorCode = mlsPeriphMotorRightPIDSetKp(uartData.floatValue);
+		if(errorCode != MLS_SUCCESS)
+		{
+			return errorCode;
+		}
+
+		memcpy(uartData.byteArray, gGuiRxDataFrame.dataBuff + 8, 4);
+		errorCode = mlsPeriphMotorRightPIDSetKi(uartData.floatValue);
+		if(errorCode != MLS_SUCCESS)
+		{
+			return errorCode;
+		}
+
+		memcpy(uartData.byteArray, gGuiRxDataFrame.dataBuff + 12, 4);
+		errorCode = mlsPeriphMotorRightPIDSetKd(uartData.floatValue);
+		if(errorCode != MLS_SUCCESS)
+		{
+			return errorCode;
+		}
+		break;
+	default:
+
+		break;
+	}
+
+	return MLS_SUCCESS;
 }
 #endif
 

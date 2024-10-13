@@ -252,6 +252,157 @@ mlsErrorCode_t mlsPeriphMotorRightSetSpeed(float speed);
  */
 mlsErrorCode_t mlsPeriphMotorRightSetDir(uint8_t dir);
 
+/*
+ * @brief   Initialize Encoder with default parameters.
+ * @note    This function must be called first.
+ * @param   None.
+ * @return
+ *      - Handle structure: Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphEncoderInit(void);
+
+/*
+ * @brief   Get tick value from left encoder.
+ *
+ * @param   *tick: Pointer of tick value.
+ *
+ * @return
+ *      - Handle structure: Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphEncoderLeftGetTick(uint32_t *tick);
+
+/*
+ * @brief   Get tick value from right encoder.
+ *
+ * @param   *tick: Pointer of tick value.
+ *
+ * @return
+ *      - Handle structure: Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphEncoderRightGetTick(uint32_t *tick);
+/*
+ * @brief   Initialize Motor PID with default parameters.
+ * @note    This function must be called first.
+ * @param   None.
+ * @return
+ *      - Handle structure: Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphMotorPIDInit(void);
+
+/*
+ * @brief   Set Kp to left motor.
+ *
+ * @param   Kp: Kp.
+ *
+ * @return
+ *      - Handle structure: Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphMotorLeftPIDSetKp(float Kp);
+
+/*
+ * @brief   Set Ki to left motor.
+ *
+ * @param   Ki: Ki.
+ *
+ * @return
+ *      - Handle structure: Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphMotorLeftPIDSetKi(float Ki);
+
+/*
+ * @brief   Set Kd to left motor.
+ *
+ * @param   Kd: Kd.
+ *
+ * @return
+ *      - Handle structure: Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphMotorLeftPIDSetKd(float Kd);
+
+/*
+ * @brief   Set set point to left motor.
+ *
+ * @param   setPoint: set point.
+ *
+ * @return
+ *      - Handle structure: Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphMotorLeftPIDSetSetPoint(float setPoint);
+
+/*
+ * @brief   Get real value from left motor.
+ *
+ * @param   *realValue: pointer of realValue.
+ *
+ * @return
+ *      - Handle structure: Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphMotorLeftPIDGetRealValue(float *realValue);
+
+/*
+ * @brief   Set Kp to right motor.
+ *
+ * @param   Kp: Kp.
+ *
+ * @return
+ *      - Handle structure: Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphMotorRightPIDSetKp(float Kp);
+
+/*
+ * @brief   Set Ki to right motor.
+ *
+ * @param   Ki: Ki.
+ *
+ * @return
+ *      - Handle structure: Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphMotorRightPIDSetKi(float Ki);
+
+/*
+ * @brief   Set Kd to right motor.
+ *
+ * @param   Kd: Kd.
+ *
+ * @return
+ *      - Handle structure: Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphMotorRightPIDSetKd(float Kd);
+
+/*
+ * @brief   Set set point to right motor.
+ *
+ * @param   setPoint: set point.
+ *
+ * @return
+ *      - Handle structure: Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphMotorRightPIDSetSetPoint(float setPoint);
+
+/*
+ * @brief   Get real value from right motor.
+ *
+ * @param   *realValue: pointer of realValue.
+ *
+ * @return
+ *      - Handle structure: Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsPeriphMotorRightPIDGetRealValue(float *realValue);
+
 #ifdef __cplusplus
 }
 #endif

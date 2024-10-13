@@ -29,6 +29,7 @@ extern "C"
 #include "stdlib.h"
 #include "string.h"
 #include "compilerSwitch.h"
+#include "HardwareInfo.h"
 /********** Constant  and compile switch definition section *******************/
 
 /********** Type definition section *******************************************/
@@ -36,9 +37,9 @@ typedef mlsErrorCode_t (*matlabFuncUartWrite)(uint8_t *buffer, uint16_t len);
 typedef mlsErrorCode_t (*matlabFuncUartRead)(uint8_t *buffer, uint16_t len);
 
 typedef struct matlab {
-	uint8_t*					bufferSend;						/*!< Matlab buffer transmit */
+	dataFrame_t*				bufferSend;						/*!< Matlab buffer transmit */
 	uint16_t					bufferSendLength;				/*!< Matlab buffer transmit length */
-	uint8_t*					bufferRead;						/*!< Matlab buffer receive */
+	dataFrame_t*				bufferRead;						/*!< Matlab buffer receive */
 	uint16_t					bufferReadLength;				/*!< Matlab buffer receive length */
 	matlabFuncUartWrite        	matlabWrite;         			/*!< Matlab write bytes */
 	matlabFuncUartRead        	matlabRead;          			/*!< Matlab read bytes */
@@ -53,9 +54,9 @@ typedef struct matlab *matlabHandle_t;
  * @brief   Configuration structure.
  */
 typedef struct {
-	uint8_t*					bufferSend;						/*!< Matlab buffer transmit */
+	dataFrame_t*				bufferSend;						/*!< Matlab buffer transmit */
 	uint16_t					bufferSendLength;				/*!< Matlab buffer transmit length */
-	uint8_t*					bufferRead;						/*!< Matlab buffer receive */
+	dataFrame_t*				bufferRead;						/*!< Matlab buffer receive */
 	uint16_t					bufferReadLength;				/*!< Matlab buffer receive length */
 	matlabFuncUartWrite        	matlabWrite;         			/*!< Matlab write bytes */
 	matlabFuncUartRead        	matlabRead;          			/*!< Matlab read bytes */
@@ -82,6 +83,15 @@ matlabHandle_t mlsMatlabInit(void);
  *      - Others:           Fail.
  */
 mlsErrorCode_t mlsMatlabSetConfig(matlabHandle_t handle, matlabConfig_t config);
+
+/*
+ * @brief   Configure with default parameters.
+ * @param 	handle: Handle structure.
+ * @return
+ *      - MLS_SUCCESS: 		Success.
+ *      - Others:           Fail.
+ */
+mlsErrorCode_t mlsMatlabConfig(matlabHandle_t handle);
 
 /*
  * @brief   Send data to Matlab by using UART

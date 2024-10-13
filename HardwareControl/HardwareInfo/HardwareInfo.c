@@ -54,6 +54,12 @@
 /********** Local Macro definition section ************************************/
 
 /********** Global variable definition section ********************************/
+uint32_t gBaseControlTimeUpdate[10];
+uint8_t gBufferRxData[UART_MAX_LENGTH];
+dataFrame_t gGuiRxDataFrame;
+dataFrame_t gGuiTxDataFrame;
+uint8_t gGuiUpdateParameter = 0;
+
 extern uint8_t gBaseControlTimeUpdateFlag[10];
 extern I2C_HandleTypeDef hi2c1;
 extern UART_HandleTypeDef huart2;
@@ -61,7 +67,7 @@ extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
 /********** Local (static) variable definition ********************************/
-uint32_t gBaseControlTimeUpdate[10];
+
 /********** Local (static) function declaration section ***********************/
 
 /********** Local function definition section *********************************/
@@ -105,6 +111,25 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	gBaseControlTimeUpdate[VEL_PUBLISH_TIME_INDEX]++;
 	gBaseControlTimeUpdate[DRIVE_INFORMATION_TIME_INDEX]++;
   }
+}
+
+// handles data of gGuiRxDataFrame when complete receive MAX_LEN byte from pc
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
+{
+	if(huart->Instance == huart2.Instance){
+		//Get data from buffer
+		memcpy(&gGuiRxDataFrame, gBufferRxData, UART_MAX_LENGTH);
+		if((gGuiRxDataFrame.header == 0x0A) && (gGuiRxDataFrame.length == (uint8_t)(Size - 4)) && (gGuiRxDataFrame.footer == 0x05))
+		{
+			memcpy(&gGuiTxDataFrame, &gGuiRxDataFrame, sizeof(gGuiRxDataFrame));
+			gGuiTxDataFrame.footer = 0x06;
+			//Send back to PC
+			HAL_UART_Transmit_DMA(&huart2, (uint8_t *)&gGuiTxDataFrame, sizeof(gGuiTxDataFrame));
+			//Turn on flag
+			gGuiUpdateParameter = 1;
+		}
+		HAL_UARTEx_ReceiveToIdle_DMA(&huart2, gBufferRxData, UART_MAX_LENGTH); // start uart rx DMA again
+	}
 }
 
 /********** Global function definition section ********************************/

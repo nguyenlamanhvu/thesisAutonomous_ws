@@ -28,6 +28,10 @@
 /********** Global variable definition section ********************************/
 uint8_t gBaseControlTimeUpdateFlag[10];
 extern TIM_HandleTypeDef htim6;
+
+#if (USE_UART_GUI == 1)
+extern uint8_t gGuiUpdateParameter;
+#endif
 /********** Local (static) variable definition ********************************/
 
 /********** Local (static) function declaration section ***********************/
@@ -41,13 +45,16 @@ mlsErrorCode_t mlsBaseControlInit(void)
 	/* Initialize peripherals */
 	errorCode = mlsPeriphImuInit();
 	errorCode = mlsPeriphImuFilterInit();
+	errorCode = mlsPeriphMotorInit();
+	errorCode = mlsPeriphEncoderInit();
+	errorCode = mlsPeriphMotorPIDInit();
 
 	/* Start Timer Interrupt*/
 	errorCode = mlsBaseControlStartTimerInterrupt(&htim6);
 #if (USE_UART_ROS == 1)
 	/* Initialize ROS*/
 	mlsBaseControlROSSetup();
-#elif (USE_UART_MATLAB == 1)
+#elif (USE_UART_MATLAB == 1 || USE_UART_GUI == 1)
 	errorCode = mlsPeriphUartInit();
 #endif
 	return errorCode;
@@ -110,6 +117,22 @@ mlsErrorCode_t mlsBaseControlMain(void)
 	{
 		mlsBaseControlUartPublishIMU();
 		gBaseControlTimeUpdateFlag[IMU_PUBLISH_TIME_INDEX] = 0;
+	}
+
+#elif (USE_UART_GUI == 1)
+	/* Receive parameter from GUI */
+	if(gGuiUpdateParameter == 1)
+	{
+		mlsBaseControlGuiReceiveData();
+		//Turn off flag
+		gGuiUpdateParameter = 0;
+	}
+
+	/* Publish motor velocity data to gui */
+	if(gBaseControlTimeUpdateFlag[VEL_PUBLISH_TIME_INDEX] == 1)
+	{
+		mlsBaseControlGuiPublishData();
+		gBaseControlTimeUpdateFlag[VEL_PUBLISH_TIME_INDEX] = 0;
 	}
 #endif
 

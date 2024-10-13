@@ -8,16 +8,16 @@
  */
 
 /**
- * @file Matlab.c
- * @brief Driver for communicating with Matlab
+ * @file Gui.c
+ * @brief Firmware for using GUI
  *
  * Long description.
- * @date 2024-09-25
+ * @date 2024-10-12
  * @author	Anh Vu
  */
 
 /********** Include section ***************************************************/
-#include "Matlab.h"
+#include "Gui.h"
 /********** Local Constant and compile switch definition section **************/
 
 /********** Local Type definition section *************************************/
@@ -36,9 +36,9 @@ extern dataFrame_t gGuiRxDataFrame;
 extern dataFrame_t gGuiTxDataFrame;
 extern UART_HandleTypeDef huart2;
 /********** Global function definition section ********************************/
-matlabHandle_t mlsMatlabInit(void)
+guiHandle_t mlsGuiInit(void)
 {
-	matlabHandle_t handle = calloc(1, sizeof(matlab_t));
+	guiHandle_t handle = calloc(1, sizeof(gui_t));
 	if (handle == NULL)
 	{
 		return NULL;
@@ -46,7 +46,7 @@ matlabHandle_t mlsMatlabInit(void)
 	return handle;
 }
 
-mlsErrorCode_t mlsMatlabSetConfig(matlabHandle_t handle, matlabConfig_t config)
+mlsErrorCode_t mlsGuiSetConfig(guiHandle_t handle, guiConfig_t config)
 {
 	/* Check if handle structure is NULL */
 	if(handle == NULL)
@@ -58,13 +58,13 @@ mlsErrorCode_t mlsMatlabSetConfig(matlabHandle_t handle, matlabConfig_t config)
 	handle->bufferReadLength = config.bufferReadLength;
 	handle->bufferSend = config.bufferSend;
 	handle->bufferSendLength = config.bufferSendLength;
-	handle->matlabRead = config.matlabRead;
-	handle->matlabWrite = config.matlabWrite;
+	handle->guiRead = config.guiRead;
+	handle->guiWrite = config.guiWrite;
 
 	return MLS_SUCCESS;
 }
 
-mlsErrorCode_t mlsMatlabConfig(matlabHandle_t handle)
+mlsErrorCode_t mlsGuiConfig(guiHandle_t handle)
 {
 	/* Check if handle structure is NULL */
 	if(handle == NULL)
@@ -77,7 +77,8 @@ mlsErrorCode_t mlsMatlabConfig(matlabHandle_t handle)
 	return MLS_SUCCESS;
 }
 
-mlsErrorCode_t mlsMatlabSendData(matlabHandle_t handle)
+
+mlsErrorCode_t mlsGuiSendData(guiHandle_t handle)
 {
 	/* Check if handle structure is NULL */
 	if(handle == NULL)
@@ -86,10 +87,10 @@ mlsErrorCode_t mlsMatlabSendData(matlabHandle_t handle)
 	}
 
 	/* Send data DMA*/
-	return handle->matlabWrite((uint8_t*)handle->bufferSend, handle->bufferSendLength);
+	return handle->guiWrite((uint8_t*)handle->bufferSend, handle->bufferSendLength);
 }
 
-mlsErrorCode_t mlsMatlabReadData(matlabHandle_t handle)
+mlsErrorCode_t mlsGuiReadData(guiHandle_t handle)
 {
 	/* Check if handle structure is NULL */
 	if(handle == NULL)
@@ -98,6 +99,6 @@ mlsErrorCode_t mlsMatlabReadData(matlabHandle_t handle)
 	}
 
 	/* Read data DMA*/
-	return handle->matlabRead((uint8_t*)handle->bufferRead, handle->bufferReadLength);
+	return handle->guiRead((uint8_t*)handle->bufferRead, handle->bufferReadLength);
 }
 /**@}*/
