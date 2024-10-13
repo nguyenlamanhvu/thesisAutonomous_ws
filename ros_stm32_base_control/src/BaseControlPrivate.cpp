@@ -433,6 +433,12 @@ mlsErrorCode_t mlsBaseControlGuiPublishData(void)
 
 	gGuiTxDataFrame.footer = 0x06;
 
+	errorCode = mlsPeriphUartSend((uint8_t*)&gGuiTxDataFrame);
+	if (errorCode != MLS_SUCCESS)
+	{
+		return errorCode;
+	}
+
 	return MLS_SUCCESS;
 }
 
