@@ -399,6 +399,8 @@ mlsErrorCode_t mlsBaseControlGuiPublishParameter(void)
 	mlsErrorCode_t errorCode = MLS_ERROR;
 
 	//Will finish when I have time.
+	/*Clear data buffer */
+	memset(gGuiTxDataFrame.dataBuff, 0, sizeof(gGuiTxDataFrame.dataBuff));
 
 	return errorCode;
 }
@@ -407,33 +409,43 @@ mlsErrorCode_t mlsBaseControlGuiPublishData(void)
 {
 	mlsErrorCode_t errorCode = MLS_ERROR;
 
+	/* Check data in Rx buffer */
+	if(gGuiRxDataFrame.header == 0x00 && gGuiRxDataFrame.mode == 0x00 && gGuiRxDataFrame.footer == 0x00)
+	{
+		return MLS_SUCCESS;
+	}
+
+	/* Clear data buffer */
+	memset(gGuiTxDataFrame.dataBuff, 0, sizeof(gGuiTxDataFrame.dataBuff));
+
 	gGuiTxDataFrame.header = 0x0A;
-	gGuiTxDataFrame.mode = GUI_RECEIVE_SPEED_MODE;
 
 	if(gGuiRxDataFrame.mode == GUI_SET_LEFT_RUN_MODE || gGuiRxDataFrame.mode == GUI_SET_LEFT_STOP_MODE)
 	{
+		gGuiTxDataFrame.mode = GUI_RECEIVE_LEFT_SPEED_MODE;
 		errorCode = mlsPeriphMotorLeftPIDGetRealValue(&uartData.floatValue);
 		if(errorCode != MLS_SUCCESS)
 		{
 			return errorCode;
 		}
-		memcpy(gGuiTxDataFrame.dataBuff, uartData.byteArray, sizeof(uartData.byteArray));
-		gGuiTxDataFrame.length = sizeof(uartData.byteArray);
+		memcpy(gGuiTxDataFrame.dataBuff, uartData.byteArray, sizeof(FloatByteArray));
+		gGuiTxDataFrame.length = sizeof(FloatByteArray);
 	}
 	else if(gGuiRxDataFrame.mode == GUI_SET_RIGHT_RUN_MODE || gGuiRxDataFrame.mode == GUI_SET_RIGHT_STOP_MODE)
 	{
+		gGuiTxDataFrame.mode = GUI_RECEIVE_RIGHT_SPEED_MODE;
 		errorCode = mlsPeriphMotorRightPIDGetRealValue(&uartData.floatValue);
 		if(errorCode != MLS_SUCCESS)
 		{
 			return errorCode;
 		}
-		memcpy(gGuiTxDataFrame.dataBuff, uartData.byteArray, sizeof(uartData.byteArray));
-		gGuiTxDataFrame.length = sizeof(uartData.byteArray);
+		memcpy(gGuiTxDataFrame.dataBuff, uartData.byteArray, sizeof(FloatByteArray));
+		gGuiTxDataFrame.length = sizeof(FloatByteArray);
 	}
 
 	gGuiTxDataFrame.footer = 0x06;
 
-	errorCode = mlsPeriphUartSend((uint8_t*)&gGuiTxDataFrame);
+	errorCode = mlsPeriphUartSend((uint8_t*)&gGuiTxDataFrame, sizeof(gGuiTxDataFrame));
 	if (errorCode != MLS_SUCCESS)
 	{
 		return errorCode;

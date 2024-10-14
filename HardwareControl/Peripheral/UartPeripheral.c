@@ -104,7 +104,7 @@ mlsErrorCode_t mlsPeriphUartInit(void)
 	return errorCode;
 }
 
-mlsErrorCode_t mlsPeriphUartSend(uint8_t *data)
+mlsErrorCode_t mlsPeriphUartSend(uint8_t *data, uint16_t len)
 {
 	mlsErrorCode_t errorCode = MLS_ERROR;
 #if (USE_UART_MATLAB == 1)
@@ -112,7 +112,7 @@ mlsErrorCode_t mlsPeriphUartSend(uint8_t *data)
 	memcpy(matlabHandle->bufferSend,data,matlabHandle->bufferSendLength);
 	errorCode = mlsMatlabSendData(matlabHandle);
 #elif (USE_UART_GUI == 1)
-	guiHandle->bufferSendLength = sizeof(data);
+	guiHandle->bufferSendLength = len;
 	memcpy((uint8_t*)guiHandle->bufferSend, data, guiHandle->bufferSendLength);
 	errorCode = mlsGuiSendData(guiHandle);
 #endif

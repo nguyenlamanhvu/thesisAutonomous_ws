@@ -99,13 +99,14 @@ mlsErrorCode_t mlsPeriphUartInit(void);
 /*
  * @brief   Send data by using uart.
  *
- * @param   data: Data string.
+ * @param[1]   	data: Data string.
+ * @param[2]	len: Length of data string.
  *
  * @return
  *      - MLS_SUCCESS: 		Success.
  *      - Others:           Fail.
  */
-mlsErrorCode_t mlsPeriphUartSend(uint8_t *data);
+mlsErrorCode_t mlsPeriphUartSend(uint8_t *data, uint16_t len);
 
 /*
  * @brief   Read data by using uart.

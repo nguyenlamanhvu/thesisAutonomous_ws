@@ -43,8 +43,8 @@ mlsErrorCode_t mlsBaseControlInit(void)
 {
 	mlsErrorCode_t errorCode = MLS_ERROR;
 	/* Initialize peripherals */
-	errorCode = mlsPeriphImuInit();
-	errorCode = mlsPeriphImuFilterInit();
+//	errorCode = mlsPeriphImuInit();
+//	errorCode = mlsPeriphImuFilterInit();
 	errorCode = mlsPeriphMotorInit();
 	errorCode = mlsPeriphEncoderInit();
 	errorCode = mlsPeriphMotorPIDInit();
@@ -134,6 +134,7 @@ mlsErrorCode_t mlsBaseControlMain(void)
 		mlsBaseControlGuiPublishData();
 		gBaseControlTimeUpdateFlag[VEL_PUBLISH_TIME_INDEX] = 0;
 	}
+	errorCode = MLS_SUCCESS;
 #endif
 
 	return errorCode;
