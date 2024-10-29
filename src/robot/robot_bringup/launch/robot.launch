@@ -1,0 +1,10 @@
+<launch>
+
+    <arg name="multi_robot_name"      default=""/>
+  
+    <!-- Rosserial -->
+    <include file="$(find robot_bringup)/launch/robot_rosserial.launch">
+      <arg name="multi_robot_name" value="$(arg multi_robot_name)"/>
+    </include>
+  
+</launch>
