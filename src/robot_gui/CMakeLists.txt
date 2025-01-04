@@ -114,7 +114,7 @@ endforeach(source)
 
 # find all resource files
 file(GLOB QRC
-    "rc/*.qrc"
+    "resource/*.qrc"
 )
 
 ###
