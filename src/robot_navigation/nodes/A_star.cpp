@@ -135,7 +135,7 @@ AStar::CoordinateList AStar::Generator::findPath(Vec2i source_, Vec2i target_)
         openSet.erase(current_it);
 
         uint distance = heuristic(current->coordinates, target_);
-        if(distance > 50)   stepSize = calculateThreat(current->coordinates);
+        if(distance > 40)   stepSize = calculateThreat(current->coordinates);
         else    stepSize = 0.1;
         // stepSize = 0.1;
         // printf("stepSize: %lf\n", stepSize);

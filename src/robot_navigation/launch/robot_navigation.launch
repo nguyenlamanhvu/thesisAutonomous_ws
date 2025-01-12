@@ -2,12 +2,13 @@
 
 <launch>
   <arg name="project" default="robot_navigation" />
+  <arg name="global_planner" default="a_star" />
   
   <arg name="map_file" default="$(find robot_navigation)/map/map.yaml"/>
   
   <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_file)" />
    
-  <node pkg="$(arg project)" type="$(arg project)" name="$(arg project)" output="screen" respawn="true" />
+  <node pkg="$(arg project)" type="$(arg global_planner)" name="$(arg global_planner)" output="screen" respawn="true" />
 
   <node pkg="rviz" type="rviz" name="rviz_$(arg project)" args="-d $(find robot_navigation)/launch/testAlgorithm.rviz" />
   

@@ -16,7 +16,7 @@ void FindingPath::subscribeAndPublish()
 {
     sub_grid_map_ = nh_.subscribe<nav_msgs::OccupancyGrid>("map", 1, &FindingPath::gridMapHandler, this);
     sub_nav_goal_ = nh_.subscribe<geometry_msgs::PoseStamped>("move_base_simple/goal", 1, &FindingPath::navGoalHandler, this);
-    pub_robot_path_ = nh_.advertise<nav_msgs::Path>("robot_path", 1, true);
+    pub_robot_path_ = nh_.advertise<nav_msgs::Path>("/global_path/path", 1, true);
 }
 
 void FindingPath::gridMapHandler(const nav_msgs::OccupancyGrid::ConstPtr &map_msg)
@@ -71,11 +71,16 @@ void FindingPath::navGoalHandler(const geometry_msgs::PoseStamped::ConstPtr &goa
     auto path = map_generator_.findPath(source, target);
 
     nav_msgs::Path path_msg;
+    
     if(path.empty())
     {
         ROS_INFO("\033[1;31mFail generate path!\033[0m");
         return;
     }
+
+    path_msg.poses.resize(path.size());
+    path_msg.header.frame_id = "map";
+    path_msg.header.stamp = ros::Time::now();
 
     for(auto coordinate=path.end()-1; coordinate>=path.begin(); --coordinate)
     {
@@ -87,7 +92,7 @@ void FindingPath::navGoalHandler(const geometry_msgs::PoseStamped::ConstPtr &goa
         path_msg.poses.push_back(point_pose);
     }
 
-    path_msg.header.frame_id = "map";
+
     pub_robot_path_.publish(path_msg);
 
     ROS_INFO("\033[1;36mSuccess generate path!\033[0m");

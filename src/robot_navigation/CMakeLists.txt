@@ -3,6 +3,7 @@ project(robot_navigation)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
+# add_compile_options(-std=c++17 -O2 -g)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -12,7 +13,11 @@ find_package(catkin REQUIRED COMPONENTS
   nav_msgs
   roscpp
   rospy
+  std_msgs
+  tf
 )
+
+find_package(Eigen3 REQUIRED COMPONENTS system)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -106,7 +111,8 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
  INCLUDE_DIRS include
 #  LIBRARIES robot_navigation
- CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy
+ LIBRARIES dwa_planner_lib
+ CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs tf
 #  DEPENDS system_lib
 )
 
@@ -119,23 +125,30 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
-# add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/robot_navigation.cpp
-# )
+add_library(dwa_planner_lib
+  nodes/DWA.cpp
+  nodes/Local_parameter.cpp
+)
+
+add_library(a_star_lib
+  nodes/A_star.cpp
+)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-# add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(dwa_planner_lib ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(a_star_lib ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME} src/Finding_path.cpp nodes/A_star.cpp)
-
+add_executable(a_star src/Finding_path.cpp)
+add_executable(dwa_planner src/Finding_localPath.cpp)
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
@@ -147,8 +160,14 @@ add_executable(${PROJECT_NAME} src/Finding_path.cpp nodes/A_star.cpp)
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(dwa_planner
   ${catkin_LIBRARIES}
+  dwa_planner_lib
+)
+
+target_link_libraries(a_star
+  ${catkin_LIBRARIES}
+  a_star_lib
 )
 
 #############
@@ -205,3 +224,9 @@ target_link_libraries(${PROJECT_NAME}
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+if(CATKIN_ENABLE_TESTING)
+    find_package(rostest REQUIRED)
+    find_package(roslint REQUIRED)
+    roslint_cpp()
+    roslint_add_test()
+endif()
