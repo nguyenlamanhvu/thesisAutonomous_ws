@@ -12,9 +12,9 @@ float calc_heuristic_cost(float x, float y, float gx, float gy) {
 	return hypot(x - gx, y - gy);
 }
 
-
-bool check_collision(Node2D n, bool** bin_map) {
-    // ROS_INFO("Check collision: bin_map[%d][%d] : %d", (int)n.get_x(), (int)n.get_y(), bin_map[(int)n.get_x()][(int)n.get_y()]);
+bool check_collision(Node2D n)
+{
+	// ROS_INFO("Check collision: bin_map[%d][%d] : %d", (int)n.get_x(), (int)n.get_y(), bin_map[(int)n.get_x()][(int)n.get_y()]);
 
 	int x1 = (int)n.get_x() - 1;
 	int y1 = (int)n.get_y() - 1;
@@ -33,15 +33,37 @@ bool check_collision(Node2D n, bool** bin_map) {
     if (x1 > 0 && y1 > 0) sum += acc_obs_map[x1 - 1][y1 - 1];
 
 	return (sum > 0);
-
-	// if(bin_map[(int)n.get_x()][(int)n.get_y()]) {
-	// 	// ROS_INFO("IN COLLISION!");
-	// 	return true;
-	// }
-	// // ROS_INFO("NO COLLISION!");
-	// return false; // NO collision
 }
 
+uint countCollition(Node2D n, int radius)
+{
+    uint obstacleCount = 0;
+
+    for (int dx = -radius; dx <= radius; dx += 2) {
+        for (int dy = 0; dy <= radius; dy += 2) {
+            if((dx == -2 && dy == 0) || (dx == 2 && dy == 0) || (dx == 0 && dy == 0)) continue;
+            Node2D new_node;
+			new_node = Node2D((int)(n.get_x() + dx * cos(n.get_theta() - dy * sin(n.get_theta()))), (int)(n.get_y() + dx * sin(n.get_theta() - dy * cos(n.get_theta()))), 0, 0, NULL);
+            if(check_collision(new_node))
+                obstacleCount++;
+        }
+    }
+    return obstacleCount;
+}
+
+float calculateStepSize(Node2D n)
+{
+    uint x1 = countCollition(n, 2);
+    uint x2 = countCollition(n, 4) - x1;
+
+    float k1 = 1.6;
+    float k2 = 0.8;
+    float c = 0.4;
+
+    float stepSize = 0.2/(k1 * x1 + k2 * x2 + c);
+
+    return stepSize;
+}
 
 int astar(float sx, float sy, float gx, float gy) {
 
@@ -55,13 +77,13 @@ int astar(float sx, float sy, float gx, float gy) {
 
 	sx = round(sx/XY_RESOLUTION);
 	sy = round(sy/XY_RESOLUTION);
-	Node2D start_node = Node2D(sx, sy, 0, NULL);
+	Node2D start_node = Node2D(sx, sy, atan2(0.0, STEP), 0, NULL);
 
     ROS_INFO("Start node: (%f, %f)", sx, sy);
 
 	gx = round(gx/XY_RESOLUTION);
 	gy = round(gy/XY_RESOLUTION);
-	Node2D goal_node = Node2D(gx, gy, 0, NULL);
+	Node2D goal_node = Node2D(gx, gy, 0, 0, NULL);
 
     ROS_INFO("Goal node: (%f, %f)", gx, gy);
 
@@ -79,6 +101,8 @@ int astar(float sx, float sy, float gx, float gy) {
 	std::map<int, Node2D> open_list;
 	std::map<int, Node2D> closed_list;
 
+	auto start = std::chrono::high_resolution_clock::now();
+
 	open_list[calc_index(start_node)] = start_node;
 
 	priority_queue<pi, vector<pi>, greater<pi>> pq;
@@ -90,7 +114,7 @@ int astar(float sx, float sy, float gx, float gy) {
 
 		if(open_list.empty()) {
 			ROS_INFO("SOLUTION DOESN'T EXIST - NO NODES FOUND IN OPEN LIST");
-			break;
+			return -1;
 		}
 
 		current_ind = pq.top();
@@ -101,20 +125,28 @@ int astar(float sx, float sy, float gx, float gy) {
 		closed_list[current_ind.second] = current_node;
 		open_list.erase(current_ind.second);
 
+		float stepSize = calculateStepSize(current_node);
+		stepSize = round(stepSize / XY_RESOLUTION);
+		ROS_INFO("Step size: %f", stepSize);
+
 		if(hypot(current_node.get_x() - gx, current_node.get_y() - gy) <= 1.0) {
 			ROS_INFO("ASTAR PATH FOUND");
+			ps.pose.position.x = (gx + grid_originalX / XY_RESOLUTION) * XY_RESOLUTION;
+			ps.pose.position.y = (gy + grid_originalY / XY_RESOLUTION) * XY_RESOLUTION;
+			astar_path.poses.push_back(ps);
 			break;
 		}
 		
 		for (int i = 0; i < motions.size(); ++i) {	
-			node_cost = calc_heuristic_cost(current_node.get_x() + motions[i][0], current_node.get_y() + motions[i][1], gx, gy);
-			node_cost = node_cost + motions[i][2] + current_node.get_g_cost();
-			new_node = Node2D(current_node.get_x() + motions[i][0], current_node.get_y() + motions[i][1], node_cost, current_ind.second);
+			node_cost = calc_heuristic_cost(current_node.get_x() + motions[i][0] * stepSize, current_node.get_y() + motions[i][1] * stepSize, gx, gy);
+			node_cost = node_cost + motions[i][2] * stepSize + current_node.get_g_cost();
+			float theta = atan2(motions[i][1], motions[i][0]);
+			new_node = Node2D(current_node.get_x() + motions[i][0], current_node.get_y() + motions[i][1], theta, node_cost, current_ind.second);
 			new_node.set_g_cost(motions[i][2] + current_node.get_g_cost());
 
 			new_ind = calc_index(new_node);
 
-			if(check_collision(new_node, bin_map)) {
+			if(check_collision(new_node)) {
 				continue;
 			}
 
@@ -133,6 +165,8 @@ int astar(float sx, float sy, float gx, float gy) {
 		}
 	}
 
+	auto end = std::chrono::high_resolution_clock::now();
+	auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
 
 	while(current_node.get_pind() != NULL) {
 		ps.pose.position.x = (current_node.get_x() + grid_originalX / XY_RESOLUTION) * XY_RESOLUTION;
@@ -140,7 +174,15 @@ int astar(float sx, float sy, float gx, float gy) {
 		astar_path.poses.push_back(ps);
 		current_node = closed_list[current_node.get_pind()];
 	}
+
+	ps.pose.position.x = (sx + grid_originalX / XY_RESOLUTION) * XY_RESOLUTION;
+	ps.pose.position.y = (sy + grid_originalY / XY_RESOLUTION) * XY_RESOLUTION;
+	astar_path.poses.push_back(ps);
+
 	astar_path_pub.publish(astar_path);
+
+	ROS_INFO("Numbers of node: %ld", astar_path.poses.size());
+	ROS_INFO("Time of algorithm (microSecond): %ld", elapsed);
 
 	return astar_path.poses.size() * XY_RESOLUTION;
 }
