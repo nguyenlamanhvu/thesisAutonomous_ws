@@ -1,76 +1,96 @@
 #ifndef ASTAR_HPP
 #define ASTAR_HPP
 
-#include <vector>
-#include <functional>
-#include <set>
-#include <math.h>
+#include <iostream>
+#include <sstream>
+#include <cmath>
+#include <chrono>
+#include <queue>
+#include <unistd.h>
 
-namespace AStar
-{
-    struct Vec2i
-    {
-        int x, y;
+#include <ros/ros.h>
+#include <tf/tf.h>
+#include <tf/transform_listener.h>
+#include <nav_msgs/OccupancyGrid.h>
+#include <nav_msgs/Path.h>
+#include <geometry_msgs/PointStamped.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/Quaternion.h>
+#include <geometry_msgs/PolygonStamped.h>
+#include "std_msgs/String.h"
+#include "std_msgs/Int32.h"
 
-        bool operator == (const Vec2i& coordinates_);
-        bool operator != (const Vec2i& coordinates_);
+using namespace std;
 
-        Vec2i operator*(int scale) const {
-            return {x * scale, y * scale};
-        }
-    };
+typedef pair<float, int> pi;
 
-    using uint = unsigned int;
-    using HeuristicFunction = std::function<uint(Vec2i, Vec2i)>;
-    using CoordinateList = std::vector<Vec2i>;
+// Publisher Variables
+ros::Publisher start_pose_pub;
+ros::Publisher goal_pose_pub;
+ros::Publisher astar_path_pub;
 
-    struct Node
-    {
-        uint G, H;
-        Vec2i coordinates;
-        Node *parent;
+// Variables for start and goal points
+float sx;
+float sy;
+float gx;
+float gy;
 
-        Node(Vec2i coord_, Node *parent_ = nullptr);
-        uint getScore();
-    };
+geometry_msgs::PointStamped start_point; // Start pose msg
+bool valid_start; // Start pose validity check
+geometry_msgs::PointStamped goal_point; // Goal pose msg
+bool valid_goal; // Goal pose validity check
 
-    using NodeSet = std::vector<Node*>;
+nav_msgs::OccupancyGrid::Ptr grid; // Pointer to the occupancy grid msg
+int grid_height;
+int grid_width;
+int grid_originalX;
+int grid_originalY;
+bool** bin_map; // 2D Binary map of the grid 
+int** acc_obs_map;
 
-    class Generator
-    {
-        bool detectCollision(Vec2i coordinates_);
-        Node* findNodeOnList(NodeSet& nodes_, Vec2i coordinates_);
-        void releaseNodes(NodeSet& nodes_);
+nav_msgs::Path path; // Astar Path
 
-    public:
-        Generator();
-        void setWorldSize(Vec2i worldSize_);
-        void setDiagonalMovement(bool enable_);
-        void setHeuristic(HeuristicFunction heuristic_);
-        CoordinateList findPath(Vec2i source_, Vec2i target_);
-        void addCollision(Vec2i coordinates_);
-        void addCollision(Vec2i coordinates_, int size);
-        void removeCollision(Vec2i coordinates_);
-        void clearCollisions();
-        float calculateThreat(Vec2i coordinates_);
-        uint countCollition(Vec2i coordinates_, int radius);
+class Node2D {
 
-    private:
-        HeuristicFunction heuristic;
-        CoordinateList direction, walls;
-        Vec2i worldSize;
-        uint directions;
-    };
+public:
 
-    class Heuristic
-    {
-        static Vec2i getDelta(Vec2i source_, Vec2i target_);
+	Node2D() {};
 
-    public:
-        static uint manhattan(Vec2i source_, Vec2i target_);
-        static uint euclidean(Vec2i source_, Vec2i target_);
-        static uint octagonal(Vec2i source_, Vec2i target_);
-    };
-}
+	Node2D(float x, float y, float cost, int pind) {
+
+		this->x = x;
+		this->y = y;
+		this->cost = cost;
+		this->g_cost = 0;
+		this->pind = pind;
+	}
+
+	float get_x() const { return x; }
+
+	float get_y() const { return y; }
+
+	float get_cost() const { return cost; }
+
+	float get_g_cost() const { return g_cost; }
+
+	int get_pind() const { return pind; }
+
+	void set_g_cost(float g_cost) { this->g_cost = g_cost; }
+
+private:
+
+	float x; // x co-ordinate of the node
+	float y; // y co-ordinate of the node
+	float cost; // cost of the node
+	float g_cost; // g cost of the node
+	int pind; // parent index of the node
+
+};
+
+int astar(float sx, float sy, float gx, float gy);
+void callback_start_pose(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& pose);
+void callback_goal_pose(const geometry_msgs::PoseStamped::ConstPtr& pose);
+void callback_map(const nav_msgs::OccupancyGrid::Ptr map);
 
 #endif // ASTAR_HPP

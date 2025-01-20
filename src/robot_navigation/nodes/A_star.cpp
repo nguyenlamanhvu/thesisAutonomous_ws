@@ -1,267 +1,250 @@
 #include "../include/robot_navigation/A_star.hpp"
-#include <algorithm>
 
-using namespace std::placeholders;
+static const float XY_RESOLUTION = 0.05; // [m] Grid resolution of the map
+static const float STEP = 1.0; // Path Resolution
 
-
-bool AStar::Vec2i::operator == (const Vec2i& coordinates_)
-{
-    return (x == coordinates_.x && y == coordinates_.y);
+int calc_index(Node2D n) {
+	return ((int)(n.get_y() * grid_width + n.get_x())); // Calculating node index
 }
 
-bool AStar::Vec2i::operator != (const Vec2i& coordinates_)
-{
-    return !(x == coordinates_.x && y == coordinates_.y);
+
+float calc_heuristic_cost(float x, float y, float gx, float gy) {
+	return hypot(x - gx, y - gy);
 }
 
-AStar::Vec2i operator + (const AStar::Vec2i& left_, const AStar::Vec2i& right_)
-{
-    return { left_.x + right_.x, left_.y + right_.y };
+
+bool check_collision(Node2D n, bool** bin_map) {
+    // ROS_INFO("Check collision: bin_map[%d][%d] : %d", (int)n.get_x(), (int)n.get_y(), bin_map[(int)n.get_x()][(int)n.get_y()]);
+
+	int x1 = (int)n.get_x() - 1;
+	int y1 = (int)n.get_y() - 1;
+	int x2 = (int)n.get_x() + 1;
+	int y2 = (int)n.get_y() + 1;
+
+	// Ensure bounds are within the grid
+    x1 = std::max(0, std::min(x1, grid_width - 1));
+    y1 = std::max(0, std::min(y1, grid_height - 1));
+    x2 = std::max(0, std::min(x2, grid_width - 1));
+    y2 = std::max(0, std::min(y2, grid_height - 1));
+
+	int sum = acc_obs_map[x2][y2];
+    if (x1 > 0) sum -= acc_obs_map[x1 - 1][y2];
+    if (y1 > 0) sum -= acc_obs_map[x2][y1 - 1];
+    if (x1 > 0 && y1 > 0) sum += acc_obs_map[x1 - 1][y1 - 1];
+
+	return (sum > 0);
+
+	// if(bin_map[(int)n.get_x()][(int)n.get_y()]) {
+	// 	// ROS_INFO("IN COLLISION!");
+	// 	return true;
+	// }
+	// // ROS_INFO("NO COLLISION!");
+	// return false; // NO collision
 }
 
-AStar::Node::Node(Vec2i coordinates_, Node *parent_)
-{
-    parent = parent_;
-    coordinates = coordinates_;
-    G = H = 0;
+
+int astar(float sx, float sy, float gx, float gy) {
+
+	nav_msgs::Path astar_path;
+	astar_path.header.stamp = ros::Time::now();
+	astar_path.header.frame_id = "/map";
+
+	geometry_msgs::PoseStamped ps;
+	ps.header.stamp = ros::Time::now();
+	ps.header.frame_id = "/map";
+
+	sx = round(sx/XY_RESOLUTION);
+	sy = round(sy/XY_RESOLUTION);
+	Node2D start_node = Node2D(sx, sy, 0, NULL);
+
+    ROS_INFO("Start node: (%f, %f)", sx, sy);
+
+	gx = round(gx/XY_RESOLUTION);
+	gy = round(gy/XY_RESOLUTION);
+	Node2D goal_node = Node2D(gx, gy, 0, NULL);
+
+    ROS_INFO("Goal node: (%f, %f)", gx, gy);
+
+	// std::vector<std::vector<float>> motions = { {0.05, 0.0, 0.05}, {-0.05, 0.0, 0.05}, {0.0, 0.05, 0.05}, {0.0, -0.05, 0.05}, {0.05, 0.05, sqrt(0.1)}, {-0.05, -0.05, sqrt(0.1)}, {-0.05, 0.05, sqrt(0.1)}, {0.05, -0.05, sqrt(0.1)}}; // x and y motion inputs for child nodes
+	std::vector<std::vector<float>> motions = { {STEP, 0.0, STEP}, {-STEP, 0.0, STEP}, {0.0, STEP, STEP}, {0.0, -STEP, STEP}, {STEP, STEP, sqrt(STEP*STEP*2)}, {-STEP, -STEP, sqrt(STEP*STEP*2)}, {-STEP, STEP, sqrt(STEP*STEP*2)}, {STEP, -STEP, sqrt(STEP*STEP*2)}}; // x and y motion inputs for child nodes
+	// std::vector<std::vector<float>> motions = { {STEP, 0.0, STEP}, {-STEP, 0.0, STEP}, {0.0, STEP, STEP}, {0.0, -STEP, STEP}, {STEP, STEP, STEP}, {-STEP, -STEP, STEP}, {-STEP, STEP, STEP}, {STEP, -STEP, STEP}};
+
+	Node2D current_node;
+	Node2D new_node;
+	float node_cost;
+	float cost_so_far = 0;
+	pair<float, int> current_ind;
+	int new_ind;
+
+	std::map<int, Node2D> open_list;
+	std::map<int, Node2D> closed_list;
+
+	open_list[calc_index(start_node)] = start_node;
+
+	priority_queue<pi, vector<pi>, greater<pi>> pq;
+	pq.push(make_pair(0, calc_index(start_node)));
+
+	while(true) {
+
+		// cin.get();
+
+		if(open_list.empty()) {
+			ROS_INFO("SOLUTION DOESN'T EXIST - NO NODES FOUND IN OPEN LIST");
+			break;
+		}
+
+		current_ind = pq.top();
+		pq.pop();
+
+		current_node = open_list[current_ind.second];
+		// cost_so_far = cost_so_far + current_node.get_cost();
+		closed_list[current_ind.second] = current_node;
+		open_list.erase(current_ind.second);
+
+		if(hypot(current_node.get_x() - gx, current_node.get_y() - gy) <= 1.0) {
+			ROS_INFO("ASTAR PATH FOUND");
+			break;
+		}
+		
+		for (int i = 0; i < motions.size(); ++i) {	
+			node_cost = calc_heuristic_cost(current_node.get_x() + motions[i][0], current_node.get_y() + motions[i][1], gx, gy);
+			node_cost = node_cost + motions[i][2] + current_node.get_g_cost();
+			new_node = Node2D(current_node.get_x() + motions[i][0], current_node.get_y() + motions[i][1], node_cost, current_ind.second);
+			new_node.set_g_cost(motions[i][2] + current_node.get_g_cost());
+
+			new_ind = calc_index(new_node);
+
+			if(check_collision(new_node, bin_map)) {
+				continue;
+			}
+
+			if(closed_list.count(new_ind)) {
+				continue;
+			}
+
+			if(!open_list.count(new_ind)) {
+				open_list[new_ind] = new_node;
+				pq.push(make_pair(new_node.get_cost(), new_ind));
+			} else {
+				if(open_list[new_ind].get_cost() > new_node.get_cost()) {
+					open_list[new_ind] = new_node;
+				}
+			}
+		}
+	}
+
+
+	while(current_node.get_pind() != NULL) {
+		ps.pose.position.x = (current_node.get_x() + grid_originalX / XY_RESOLUTION) * XY_RESOLUTION;
+		ps.pose.position.y = (current_node.get_y() + grid_originalY / XY_RESOLUTION) * XY_RESOLUTION;
+		astar_path.poses.push_back(ps);
+		current_node = closed_list[current_node.get_pind()];
+	}
+	astar_path_pub.publish(astar_path);
+
+	return astar_path.poses.size() * XY_RESOLUTION;
 }
 
-AStar::uint AStar::Node::getScore()
-{
-    return G + H;
+
+/*
+	Subcribes/callback: /initial_pose
+	Publishes: /start_pose
+
+	Callback function to retrieve the initial pose and display it in rviz
+*/
+void callback_start_pose(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& pose) {
+    ROS_INFO("Receive start pose");
+	start_point.header.stamp = ros::Time::now();
+	start_point.header.frame_id = "map";
+	start_point.point = pose->pose.pose.position;
+
+	start_pose_pub.publish(start_point);
+    // Round start coordinate
+    float start_x = round(start_point.point.x*10)/10;
+    float start_y = round(start_point.point.y*10)/10;
+
+	sx = start_x - grid_originalX;
+	sy = start_y - grid_originalY;
+
+	// path.poses.clear();
+
+	// astar(sx, sy, gx, gy);
 }
 
-AStar::Generator::Generator()
-{
-    setDiagonalMovement(false);
-    setHeuristic(&Heuristic::manhattan);
-    direction = {
-        { 0, 1 }, { 1, 0 }, { 0, -1 }, { -1, 0 },
-        { -1, -1 }, { 1, 1 }, { -1, 1 }, { 1, -1 }
-    };
+
+/*
+	Subcribes/callback: /move_base_simple/goal
+	Publishes: /goal_pose
+
+	Callback function to retrieve the final pose and display it in rviz
+*/
+void callback_goal_pose(const geometry_msgs::PoseStamped::ConstPtr& pose) {
+    ROS_INFO("Receive goal pose");
+	goal_point.header.stamp = ros::Time::now();
+	goal_point.header.frame_id = "map";
+	goal_point.point = pose->pose.position;
+
+	goal_pose_pub.publish(goal_point);
+
+	// Round goal coordinate
+    float goal_x = round(goal_point.point.x*10)/10;
+    float goal_y = round(goal_point.point.y*10)/10;
+
+	gx = goal_x - grid_originalX;
+	gy = goal_y - grid_originalY;
+	
+	path.poses.clear();
+
+	astar(sx, sy, gx, gy);
 }
 
-void AStar::Generator::setWorldSize(Vec2i worldSize_)
-{
-    worldSize = worldSize_;
+
+/*
+	Subscribes/Callback: /map
+	Publishes: None
+
+	Callback function to retrieve the occupancy grid and construct a 2D binary obstacle map 
+*/
+void callback_map(const nav_msgs::OccupancyGrid::Ptr map) {
+
+	grid = map;
+	ROS_INFO("Recieved the occupancy grid map");
+
+	grid_height = map->info.height;
+	grid_width = map->info.width;
+    grid_originalX = map->info.origin.position.x;
+    grid_originalY = map->info.origin.position.y;
+    ROS_INFO("Grid original: %d, %d", grid_originalX, grid_originalY);
+	bin_map = new bool*[grid_width];
+
+	for (int x = 0; x < grid_width; ++x) { bin_map[x] = new bool[grid_height]; }
+
+	for (int x = 0; x < grid_width; ++x) {
+		for (int y = 0; y < grid_height; ++y) {
+			bin_map[x][y] = map->data[y * grid_width + x] ? true : false;
+            // ROS_INFO("Bin map [%d][%d]: %d", x, y, bin_map[x][y]);
+		}
+	}
+
+	acc_obs_map = new int* [grid_width];
+
+	for (int x = 0; x < grid_width; x++) {
+		acc_obs_map[x] = new int[grid_height];
+		for (int y = 0; y < grid_height; y++) {
+			acc_obs_map[x][y] = (bin_map[x][y] > 0);
+		}
+	}
+
+	for (int x = 0; x < grid_width; x++) {
+		for (int y = 1; y < grid_height; y++) {
+			acc_obs_map[x][y] = acc_obs_map[x][y-1] + acc_obs_map[x][y];
+		}
+	}
+
+	for (int y = 0; y < grid_height; y++) {
+		for (int x = 1; x < grid_width; x++) {
+			acc_obs_map[x][y] = acc_obs_map[x-1][y] + acc_obs_map[x][y];
+		}
+	}
 }
 
-void AStar::Generator::setDiagonalMovement(bool enable_)
-{
-    directions = (enable_ ? 8 : 4);
-}
-
-void AStar::Generator::setHeuristic(HeuristicFunction heuristic_)
-{
-    heuristic = std::bind(heuristic_, _1, _2);
-}
-
-void AStar::Generator::addCollision(Vec2i coordinates_)
-{
-    if (coordinates_.x < 0 || coordinates_.x >= worldSize.x ||
-        coordinates_.y < 0 || coordinates_.y >= worldSize.y)
-        return;
-
-    if(!detectCollision(coordinates_))
-        walls.push_back(coordinates_);
-}
-
-void AStar::Generator::addCollision(Vec2i coordinates_, int size)
-{
-    if(size == 0)
-    {
-        addCollision(coordinates_);
-        return;
-    }
-
-    for(int i=0; i<4; i++)
-    {
-        Vec2i new_coord = coordinates_ + direction[i];
-        addCollision(new_coord, size-1);
-    }
-}
-
-void AStar::Generator::removeCollision(Vec2i coordinates_)
-{
-    auto it = std::find(walls.begin(), walls.end(), coordinates_);
-    if (it != walls.end()) {
-        walls.erase(it);
-    }
-}
-
-void AStar::Generator::clearCollisions()
-{
-    walls.clear();
-}
-
-AStar::CoordinateList AStar::Generator::findPath(Vec2i source_, Vec2i target_)
-{
-    Node *current = nullptr;
-    NodeSet openSet, closedSet;
-    openSet.reserve(100);
-    closedSet.reserve(100);
-    openSet.push_back(new Node(source_));
-    float stepSize;
-
-    struct timespec start, end;
-    clock_gettime(CLOCK_MONOTONIC, &start);
-
-    while (!openSet.empty()) {
-        auto current_it = openSet.begin();
-        current = *current_it;
-
-        for (auto it = openSet.begin(); it != openSet.end(); it++) {
-            auto node = *it;
-            if (node->getScore() <= current->getScore()) {
-                current = node;
-                current_it = it;
-            }
-        }
-
-        clock_gettime(CLOCK_MONOTONIC, &end);
-        double time_result = end.tv_sec - start.tv_sec + (end.tv_nsec - start.tv_nsec)*1e-9;
-
-        if (time_result > 1.0) { //time failure limit
-            printf("time: %lf\n", time_result);
-            break;
-        }
-
-        if (current->coordinates == target_) {
-            printf("Cost time: %lf\n", time_result);
-            break;
-        }
-
-        closedSet.push_back(current);
-        openSet.erase(current_it);
-
-        uint distance = heuristic(current->coordinates, target_);
-        if(distance > 40)   stepSize = calculateThreat(current->coordinates);
-        else    stepSize = 0.1;
-        // stepSize = 0.1;
-        // printf("stepSize: %lf\n", stepSize);
-
-        for (uint i = 0; i < directions; ++i) {
-            Vec2i newCoordinates(current->coordinates + direction[i] * (stepSize * 10));
-            if (detectCollision(newCoordinates) ||
-                findNodeOnList(closedSet, newCoordinates)) {
-                continue;
-            }
-
-            uint totalCost = current->G + ((i < 4) ? (10 * stepSize) : (14 * stepSize));
-
-            Node *successor = findNodeOnList(openSet, newCoordinates);
-            if (successor == nullptr) {
-                successor = new Node(newCoordinates, current);
-                successor->G = totalCost;
-                successor->H = heuristic(successor->coordinates, target_);
-                openSet.push_back(successor);
-            }
-            else if (totalCost < successor->G) {
-                successor->parent = current;
-                successor->G = totalCost;
-            }
-        }
-    }
-
-    CoordinateList path;
-
-    if (current->coordinates == target_)
-    {
-        while (current != nullptr)
-        {
-            path.push_back(current->coordinates);
-            current = current->parent;
-        }
-    }
-    printf("Number of node: %ld\n", path.size());
-
-    releaseNodes(openSet);
-    releaseNodes(closedSet);
-
-    return path;
-}
-
-AStar::Node* AStar::Generator::findNodeOnList(NodeSet& nodes_, Vec2i coordinates_)
-{
-    for (auto node : nodes_) {
-        if (node->coordinates == coordinates_) {
-            return node;
-        }
-    }
-    return nullptr;
-}
-
-void AStar::Generator::releaseNodes(NodeSet& nodes_)
-{
-    for (auto it = nodes_.begin(); it != nodes_.end();) {
-        delete *it;
-        it = nodes_.erase(it);
-    }
-}
-
-bool AStar::Generator::detectCollision(Vec2i coordinates_)
-{
-    if (coordinates_.x < 0 || coordinates_.x >= worldSize.x ||
-        coordinates_.y < 0 || coordinates_.y >= worldSize.y ||
-        std::find(walls.begin(), walls.end(), coordinates_) != walls.end())
-    {
-        return true;
-    }
-
-    return false;
-}
-
-float AStar::Generator::calculateThreat(Vec2i coordinates_)
-{
-    uint x1 = countCollition(coordinates_, 2);
-    uint x2 = countCollition(coordinates_, 3) - x1;
-
-    float k1 = 1.6;
-    float k2 = 0.8;
-    float c = 0.4;
-
-    float stepSize = 0.2/(k1 * x1 + k2 * x2 + c);
-
-    return stepSize;
-}
-
-uint AStar::Generator::countCollition(Vec2i coordinates_, int radius)
-{
-    uint obstacleCount = 0;
-
-    for (int dx = -radius; dx <= radius; ++dx) {
-        for (int dy = 0; dy <= radius; ++dy) {
-            if((dx == -1 && dy == 0) || (dx == 1 && dy == 0)) continue;
-            Vec2i newCoordinate;
-            newCoordinate.x = coordinates_.x + dx;
-            newCoordinate.y = coordinates_.y + dy;
-            if(detectCollision(newCoordinate))
-                obstacleCount++;
-        }
-    }
-
-    return obstacleCount;
-}
-
-AStar::Vec2i AStar::Heuristic::getDelta(Vec2i source_, Vec2i target_)
-{
-    return{ abs(source_.x - target_.x),  abs(source_.y - target_.y) };
-}
-
-AStar::uint AStar::Heuristic::manhattan(Vec2i source_, Vec2i target_)
-{
-    auto delta = std::move(getDelta(source_, target_));
-    return static_cast<uint>(10 * (delta.x + delta.y));
-}
-
-AStar::uint AStar::Heuristic::euclidean(Vec2i source_, Vec2i target_)
-{
-    auto delta = std::move(getDelta(source_, target_));
-    return static_cast<uint>(10 * sqrt(pow(delta.x, 2) + pow(delta.y, 2)));
-}
-
-AStar::uint AStar::Heuristic::octagonal(Vec2i source_, Vec2i target_)
-{
-    auto delta = std::move(getDelta(source_, target_));
-    return 10 * (delta.x + delta.y) + (-6) * std::min(delta.x, delta.y);
-}
