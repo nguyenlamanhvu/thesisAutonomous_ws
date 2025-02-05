@@ -40,6 +40,7 @@ geometry_msgs::PointStamped start_point; // Start pose msg
 bool valid_start; // Start pose validity check
 geometry_msgs::PointStamped goal_point; // Goal pose msg
 bool valid_goal; // Goal pose validity check
+geometry_msgs::PointStamped amcl_point; // AMCL pose msg
 
 nav_msgs::OccupancyGrid::Ptr grid; // Pointer to the occupancy grid msg
 int grid_height;
@@ -96,5 +97,6 @@ int astar(float sx, float sy, float gx, float gy);
 void callback_start_pose(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& pose);
 void callback_goal_pose(const geometry_msgs::PoseStamped::ConstPtr& pose);
 void callback_map(const nav_msgs::OccupancyGrid::Ptr map);
+void callback_amcl_pose(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& pose);
 
 #endif // ASTAR_HPP

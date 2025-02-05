@@ -127,15 +127,17 @@ int astar(float sx, float sy, float gx, float gy) {
 
 		float stepSize = calculateStepSize(current_node);
 		stepSize = round(stepSize / XY_RESOLUTION);
-		ROS_INFO("Step size: %f", stepSize);
+		// ROS_INFO("Step size: %f", stepSize);
 
 		if(hypot(current_node.get_x() - gx, current_node.get_y() - gy) <= 1.0) {
 			ROS_INFO("ASTAR PATH FOUND");
 			ps.pose.position.x = (gx + grid_originalX / XY_RESOLUTION) * XY_RESOLUTION;
 			ps.pose.position.y = (gy + grid_originalY / XY_RESOLUTION) * XY_RESOLUTION;
+			ps.pose.orientation.w = 1.0;
 			astar_path.poses.push_back(ps);
 			break;
 		}
+		stepSize = 1.0;
 		
 		for (int i = 0; i < motions.size(); ++i) {	
 			node_cost = calc_heuristic_cost(current_node.get_x() + motions[i][0] * stepSize, current_node.get_y() + motions[i][1] * stepSize, gx, gy);
@@ -165,24 +167,27 @@ int astar(float sx, float sy, float gx, float gy) {
 		}
 	}
 
-	auto end = std::chrono::high_resolution_clock::now();
-	auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+	// auto end = std::chrono::high_resolution_clock::now();
+	// auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
 
 	while(current_node.get_pind() != NULL) {
 		ps.pose.position.x = (current_node.get_x() + grid_originalX / XY_RESOLUTION) * XY_RESOLUTION;
 		ps.pose.position.y = (current_node.get_y() + grid_originalY / XY_RESOLUTION) * XY_RESOLUTION;
+		ps.pose.orientation.w = 1.0;
 		astar_path.poses.push_back(ps);
 		current_node = closed_list[current_node.get_pind()];
 	}
 
 	ps.pose.position.x = (sx + grid_originalX / XY_RESOLUTION) * XY_RESOLUTION;
 	ps.pose.position.y = (sy + grid_originalY / XY_RESOLUTION) * XY_RESOLUTION;
+	ps.pose.orientation.w = 1.0;
 	astar_path.poses.push_back(ps);
 
 	astar_path_pub.publish(astar_path);
 
-	ROS_INFO("Numbers of node: %ld", astar_path.poses.size());
-	ROS_INFO("Time of algorithm (microSecond): %ld", elapsed);
+	// ROS_INFO("Numbers of node: %ld", astar_path.poses.size());
+	// ROS_INFO("Time of algorithm (microSecond): %ld", elapsed);
+	// ROS_INFO("Cost of path: %.4f", cost_so_far);
 
 	return astar_path.poses.size() * XY_RESOLUTION;
 }
@@ -211,6 +216,22 @@ void callback_start_pose(const geometry_msgs::PoseWithCovarianceStamped::ConstPt
 	// path.poses.clear();
 
 	// astar(sx, sy, gx, gy);
+}
+
+/*
+	Subcribes/callback: /amcl_pose
+
+	Callback function to retrieve the amcl pose
+*/
+void callback_amcl_pose(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& pose) {
+	// Round start coordinate
+    float start_x = round(pose->pose.pose.position.x*10)/10;
+    float start_y = round(pose->pose.pose.position.y*10)/10;
+
+	sx = start_x - grid_originalX;
+	sy = start_y - grid_originalY;
+
+	ROS_INFO_STREAM("Receive amcl pose: " << sx << ", " << sy);
 }
 
 

@@ -226,11 +226,18 @@ public:
   float calc_path_cost(const std::vector<State> &traj);
 
   /**
-   * @brief Calculate the distance of current pose to global path
+   * @brief Find closest point to global path
    * @param state The robot state
+   * @return Closest point
+   */
+  geometry_msgs::Point find_closest_point(const State state);
+
+  /**
+   * @brief Calculate the distance of current pose to global path
+   * @param traj The estimated trajectory
    * @return The distance of current pose to global path
    */
-  float calc_dist_to_path(const State state);
+  float calc_dist_to_path(const std::vector<State> &traj);
 
   /**
    * @brief Simulate the robot motion

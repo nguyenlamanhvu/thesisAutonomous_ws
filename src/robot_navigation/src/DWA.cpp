@@ -152,18 +152,31 @@ void DWAPlanner::dist_to_goal_th_callback(const std_msgs::Float64ConstPtr &msg)
 
 void DWAPlanner::edge_on_global_path_callback(const nav_msgs::PathConstPtr &msg)
 {
+  ROS_INFO("Receive global path");
   if (!use_path_cost_)
     return;
   edge_points_on_path_ = *msg;
-  try
-  {
-    for (auto &pose : edge_points_on_path_.value().poses)
-      listener_.transformPose(robot_frame_, ros::Time(0), pose, msg->header.frame_id, pose);
-  }
-  catch (tf::TransformException ex)
-  {
-    ROS_ERROR("%s", ex.what());
-  }
+  // try
+  // {
+  //   for (auto &pose : edge_points_on_path_.value().poses)
+  //   {
+  //     ROS_INFO("Before transformed Pose:");
+  //     ROS_INFO("Position: [x: %f, y: %f, z: %f]", 
+  //        pose.pose.position.x, 
+  //        pose.pose.position.y, 
+  //        pose.pose.position.z);
+  //     listener_.transformPose(robot_frame_, ros::Time(0), pose, msg->header.frame_id, pose);
+  //     ROS_INFO("Transformed Pose:");
+  //     ROS_INFO("Position: [x: %f, y: %f, z: %f]", 
+  //        pose.pose.position.x, 
+  //        pose.pose.position.y, 
+  //        pose.pose.position.z);
+  //   }
+  // }
+  // catch (tf::TransformException ex)
+  // {
+  //   ROS_ERROR("%s", ex.what());
+  // }
 }
 
 std::vector<DWAPlanner::State>
@@ -195,7 +208,7 @@ DWAPlanner::dwa_planning(const Eigen::Vector3d &goal, std::vector<std::pair<std:
       traj.first = generate_trajectory(v, y);
       const Cost cost = evaluate_trajectory(traj.first, goal);
       costs.push_back(cost);
-      if (cost.obs_cost_ == 1e6)
+      if (cost.obs_cost_ == 1e6 || cost.path_cost_ == 1e6)
       {
         traj.second = false;
       }
@@ -210,10 +223,11 @@ DWAPlanner::dwa_planning(const Eigen::Vector3d &goal, std::vector<std::pair<std:
     if (dynamic_window.min_yawrate_ < 0.0 && 0.0 < dynamic_window.max_yawrate_)
     {
       std::pair<std::vector<State>, bool> traj;
+      // ROS_INFO_STREAM("Go straight");
       traj.first = generate_trajectory(v, 0.0);
       const Cost cost = evaluate_trajectory(traj.first, goal);
       costs.push_back(cost);
-      if (cost.obs_cost_ == 1e6)
+      if (cost.obs_cost_ == 1e6 || cost.path_cost_ == 1e6)
       {
         traj.second = false;
       }
@@ -252,11 +266,11 @@ DWAPlanner::dwa_planning(const Eigen::Vector3d &goal, std::vector<std::pair<std:
     }
   }
 
-  ROS_INFO("===");
-  ROS_INFO_STREAM("(v, y) = (" << best_traj.front().velocity_ << ", " << best_traj.front().yawrate_ << ")");
-  min_cost.show();
-  ROS_INFO_STREAM("num of trajectories available: " << available_traj_count << " of " << trajectories.size());
-  ROS_INFO(" ");
+  // ROS_INFO("===");
+  // ROS_INFO_STREAM("(v, y) = (" << best_traj.front().velocity_ << ", " << best_traj.front().yawrate_ << ")");
+  // min_cost.show();
+  // ROS_INFO_STREAM("num of trajectories available: " << available_traj_count << " of " << trajectories.size());
+  // ROS_INFO(" ");
 
   return best_traj;
 }
@@ -328,7 +342,7 @@ void DWAPlanner::process(void)
   }
 }
 
-bool DWAPlanner::can_move(void)
+bool DWAPlanner:: can_move(void)
 {
   if (!footprint_.has_value())
     ROS_WARN_THROTTLE(1.0, "Robot Footprint has not been updated");
@@ -381,6 +395,11 @@ geometry_msgs::Twist DWAPlanner::calc_cmd_vel(void)
   if (M_PI / 4.0 < fabs(angle_to_goal))
     use_speed_cost_ = true;
 
+  if (hypot(goal_.pose.position.x, goal_.pose.position.y) < 0.8)
+    use_path_cost_ = false;
+  else
+    use_path_cost_ = true;
+
   if (dist_to_goal_th_ < goal.segment(0, 2).norm() && !has_reached_)
   {
     if (can_adjust_robot_direction(goal))
@@ -391,12 +410,14 @@ geometry_msgs::Twist DWAPlanner::calc_cmd_vel(void)
                                                 : std::min(cmd_vel.angular.z, -min_in_place_yawrate_);
       best_traj.first = generate_trajectory(cmd_vel.angular.z, goal);
       trajectories.push_back(best_traj);
+      // ROS_INFO("Adjust robot direction");
     }
     else
     {
       best_traj.first = dwa_planning(goal, trajectories);
       cmd_vel.linear.x = best_traj.first.front().velocity_;
       cmd_vel.angular.z = best_traj.first.front().yawrate_;
+      // ROS_INFO("DWA planning");
     }
   }
   else
@@ -413,6 +434,7 @@ geometry_msgs::Twist DWAPlanner::calc_cmd_vel(void)
     {
       has_finished_.data = true;
       has_reached_ = false;
+      use_path_cost_ = true;
     }
     best_traj.first = generate_trajectory(cmd_vel.linear.x, cmd_vel.angular.z);
     trajectories.push_back(best_traj);
@@ -426,6 +448,7 @@ geometry_msgs::Twist DWAPlanner::calc_cmd_vel(void)
   visualize_footprints(best_traj.first, predict_footprints_pub_);
 
   use_speed_cost_ = false;
+  // use_speed_cost_ = true;
 
   return cmd_vel;
 }
@@ -476,7 +499,13 @@ DWAPlanner::Window DWAPlanner::calc_dynamic_window(void)
 float DWAPlanner::calc_to_goal_cost(const std::vector<State> &traj, const Eigen::Vector3d &goal)
 {
   Eigen::Vector3d last_position(traj.back().x_, traj.back().y_, traj.back().yaw_);
-  return (last_position.segment(0, 2) - goal.segment(0, 2)).norm();
+  float distance = (last_position.segment(0, 2) - goal.segment(0, 2)).norm();
+  // ROS_INFO_STREAM("Goal cost: " << distance);
+  // if (distance < 0.25)
+  //   use_path_cost_ = false;
+  // else
+  //   use_path_cost_ = true;
+  return distance;
 }
 
 float DWAPlanner::calc_obs_cost(const std::vector<State> &traj)
@@ -513,51 +542,198 @@ float DWAPlanner::calc_path_cost(const std::vector<State> &traj)
   if (!use_path_cost_)
     return 0.0;
   else
-    return calc_dist_to_path(traj.back());
+    return calc_dist_to_path(traj);
 }
 
-float DWAPlanner::calc_dist_to_path(const State state)
+geometry_msgs::Point DWAPlanner::find_closest_point(const State state)
 {
-  geometry_msgs::Point edge_point1 = edge_points_on_path_.value().poses.front().pose.position;
-  geometry_msgs::Point edge_point2 = edge_points_on_path_.value().poses.back().pose.position;
-  const float a = edge_point2.y - edge_point1.y;
-  const float b = -(edge_point2.x - edge_point1.x);
-  const float c = -a * edge_point1.x - b * edge_point1.y;
-
-  return fabs(a * state.x_ + b * state.y_ + c) / (hypot(a, b) + DBL_EPSILON);
-
-if (!edge_points_on_path_ || edge_points_on_path_.value().poses.size() < 2) {
-        ROS_ERROR("Path is not properly defined or has insufficient points.");
-        return std::numeric_limits<float>::max();
-    }
+    // double min_distance = std::numeric_limits<double>::max();
 
     const auto& poses = edge_points_on_path_.value().poses;
-
-    float min_distance = std::numeric_limits<float>::max();
-
-    for (size_t i = 0; i < poses.size() - 1; ++i) {
-        geometry_msgs::Point p1 = poses[i].pose.position;
-        geometry_msgs::Point p2 = poses[i + 1].pose.position;
-
-        // Compute the closest point on the line segment [p1, p2]
-        Eigen::Vector2f A(p1.x, p1.y);
-        Eigen::Vector2f B(p2.x, p2.y);
-        Eigen::Vector2f P(state.x_, state.y_);
-
-        Eigen::Vector2f AB = B - A;
-        Eigen::Vector2f AP = P - A;
-
-        float t = AB.dot(AP) / (AB.squaredNorm()); // Project point onto segment
-        t = clamp(t, 0.0f, 1.0f);          // Clamp to [0, 1] to stay on the segment
-
-        Eigen::Vector2f closest_point = A + t * AB;
-
-        // Calculate the distance from the state to the closest point
-        float distance = (P - closest_point).norm();
-        min_distance = std::min(min_distance, distance);
+    geometry_msgs::Point closest_point = poses.front().pose.position;
+    for (const auto& pose : poses)
+    {
+      // ROS_INFO_STREAM("Closest point: (" << pose.pose.position.x << ", " << pose.pose.position.y << ")");
+      double distance = hypot(state.x_ - pose.pose.position.x, state.y_ - pose.pose.position.y);
+      if (distance < 1.0) {
+          // min_distance = distance;
+          closest_point = pose.pose.position;
+          return closest_point;
+      }
     }
+    return poses.front().pose.position;
+}
 
-    return min_distance;
+float DWAPlanner::calc_dist_to_path(const std::vector<State> &traj)
+{
+  // geometry_msgs::Point edge_point1 = edge_points_on_path_.value().poses.front().pose.position;
+  // geometry_msgs::Point edge_point2 = edge_points_on_path_.value().poses.back().pose.position;
+  // const float a = edge_point2.y - edge_point1.y;
+  // const float b = -(edge_point2.x - edge_point1.x);
+  // const float c = -a * edge_point1.x - b * edge_point1.y;
+
+  // return fabs(a * state.x_ + b * state.y_ + c) / (hypot(a, b) + DBL_EPSILON);
+
+  if (!edge_points_on_path_ || edge_points_on_path_.value().poses.size() < 2) {
+    ROS_ERROR("Path is not properly defined or has insufficient points.");
+    return std::numeric_limits<float>::max();
+  }
+
+  try
+  {
+    for (auto &pose : edge_points_on_path_.value().poses)
+    {
+      listener_.transformPose(robot_frame_, ros::Time(0), pose, edge_points_on_path_.value().header.frame_id, pose);
+    }
+  }
+  catch (tf::TransformException ex)
+  {
+    ROS_ERROR("%s", ex.what());
+  }
+
+  auto& trajectory_point = traj.back();
+  for (size_t i = 0; i < edge_points_on_path_.value().poses.size() - 1; ++i) {
+    geometry_msgs::Point edge_point1 = edge_points_on_path_.value().poses[i].pose.position;
+    if (hypot(edge_point1.x, edge_point1.y) < 1.0)
+    {
+      // ROS_INFO_STREAM("Closest point: (" << edge_point1.x << ", " << edge_point1.y << ")");
+      geometry_msgs::Point edge_point2 = edge_points_on_path_.value().poses[i+1].pose.position;
+      const float a = edge_point2.y - edge_point1.y;
+      const float b = -(edge_point2.x - edge_point1.x);
+      const float c = -a * edge_point1.x - b * edge_point1.y;
+
+      double projection_error = fabs(a * trajectory_point.x_ + b * trajectory_point.y_ + c) / (hypot(a, b) + DBL_EPSILON);
+      if(projection_error < 0.75)  return projection_error;
+    }
+  }
+
+  return 1e6;
+
+
+  // double total_cost = 0.0;
+
+  // for (const auto& traj_point : traj) {
+  //   double min_projection_error = std::numeric_limits<double>::max();
+
+  //   for (size_t i = 0; i < edge_points_on_path_.value().poses.size() - 1; ++i) {
+  //       // Extract two consecutive points from the global path
+  //       Eigen::Vector2f A(edge_points_on_path_.value().poses[i].pose.position.x, edge_points_on_path_.value().poses[i].pose.position.y);
+  //       Eigen::Vector2f B(edge_points_on_path_.value().poses[i + 1].pose.position.x, edge_points_on_path_.value().poses[i + 1].pose.position.y);
+  //       Eigen::Vector2f P(traj_point.x_, traj_point.y_);
+
+  //       // Compute projection point
+  //       Eigen::Vector2f AB = B - A;
+  //       Eigen::Vector2f AP = P - A;
+  //       float t = AB.dot(AP) / AB.squaredNorm();
+  //       t = clamp(t, 0.0f, 1.0f);
+  //       Eigen::Vector2f closest_point = A + t * AB;
+
+  //       double projection_error = (P - closest_point).norm();
+  //       min_projection_error = std::min(min_projection_error, projection_error);
+  //   }
+
+  //   total_cost += min_projection_error;
+  // }
+  // return total_cost;
+
+  // double total_cost = 0.0;
+  // for (const auto& trajectory_point : traj)
+  // {
+  //   geometry_msgs::Point closest_point = find_closest_point(trajectory_point);
+  //   double distance = hypot(trajectory_point.x_ - closest_point.x, trajectory_point.y_ - closest_point.y);
+  //   total_cost += distance;
+  // }
+
+  // if (!traj.empty()) {
+  //   total_cost /= traj.size();
+  // }
+
+  // auto& trajectory_point = traj.back();
+  // double projection_error;
+  // double min_projection_error = std::numeric_limits<double>::max();
+
+  // for (size_t i = 0; i < edge_points_on_path_.value().poses.size() - 1; ++i) {
+  //   geometry_msgs::Point edge_point1 = edge_points_on_path_.value().poses[i].pose.position;
+  //   geometry_msgs::Point edge_point2 = edge_points_on_path_.value().poses[i+1].pose.position;
+  //   const float a = edge_point2.y - edge_point1.y;
+  //   const float b = -(edge_point2.x - edge_point1.x);
+  //   const float c = -a * edge_point1.x - b * edge_point1.y;
+
+  //   projection_error = fabs(a * trajectory_point.x_ + b * trajectory_point.y_ + c) / (hypot(a, b) + DBL_EPSILON);
+
+  //   if(projection_error < 0.45)  break;
+    // min_projection_error = std::min(min_projection_error, projection_error);
+
+    // Eigen::Vector2f A(edge_points_on_path_.value().poses[i].pose.position.x, edge_points_on_path_.value().poses[i].pose.position.y);
+    // Eigen::Vector2f B(edge_points_on_path_.value().poses[i + 1].pose.position.x, edge_points_on_path_.value().poses[i + 1].pose.position.y);
+    // Eigen::Vector2f P(trajectory_point.x_, trajectory_point.y_);
+
+    // Eigen::Vector2f AB = B - A;
+    // Eigen::Vector2f AP = P - A;
+    // float t = AB.dot(AP) / AB.squaredNorm();
+    // t = clamp(t, 0.0f, 1.0f);
+    // Eigen::Vector2f closest_point = A + t * AB;
+
+    // double projection_error = (P - closest_point).norm();
+  // }
+
+  // geometry_msgs::Point closest_point = find_closest_point(trajectory_point);
+  // double distance = hypot(trajectory_point.x_ - closest_point.x, trajectory_point.y_ - closest_point.y);
+
+  // if(projection_error < 0.45 && distance < 1.0)  return (projection_error + distance);
+
+  // ROS_INFO_STREAM("Closest point: (" << closest_point.x << ", " << closest_point.y << ")");
+  // double distance = hypot(trajectory_point.x_ - closest_point.x, trajectory_point.y_ - closest_point.y);
+  // return 1e6;
+
+  // for (const auto& trajectory_point : traj)
+  // {
+  //   double distance = hypot(trajectory_point.x_ - closest_point.x, trajectory_point.y_ - closest_point.y);
+  //   total_cost += distance;
+  // }
+  
+  // if (!traj.empty()) {
+  //   total_cost /= traj.size();
+  // }
+
+  // ROS_INFO_STREAM("Closest point: (" << closest_point.x << ", " << closest_point.y << ")");
+  // ROS_INFO_STREAM("Trajectory point: (" << trajectory_point.x_ << ", " << trajectory_point.y_ << ")");
+  // ROS_INFO_STREAM("Path cost: " << distance);
+
+  // return total_cost;
+
+  // const auto& poses = edge_points_on_path_.value().poses;
+
+  // float min_distance = std::numeric_limits<float>::max();
+
+  // for (size_t i = 0; i < poses.size() - 1; ++i) {
+  //   geometry_msgs::Point p1 = poses[i].pose.position;
+  //   geometry_msgs::Point p2 = poses[i + 1].pose.position;
+
+  //   // Compute the closest point on the line segment [p1, p2]
+  //   Eigen::Vector2f A(p1.x, p1.y);
+  //   Eigen::Vector2f B(p2.x, p2.y);
+  //   Eigen::Vector2f P(state.x_, state.y_);
+
+  //   Eigen::Vector2f AB = B - A;
+  //   Eigen::Vector2f AP = P - A;
+
+  //   float t = AB.dot(AP) / (AB.squaredNorm()); // Project point onto segment
+  //   t = clamp(t, 0.0f, 1.0f);          // Clamp to [0, 1] to stay on the segment
+
+  //   Eigen::Vector2f closest_point = A + t * AB;
+
+  //   // Calculate the distance from the state to the closest point
+  //   float distance = (P - closest_point).norm();
+  //   min_distance = std::min(min_distance, distance);
+
+  //   ROS_INFO_STREAM("Closest point: (" << closest_point.x() << ", " << closest_point.y() << ")");
+  //   ROS_INFO_STREAM("Path cost: " << min_distance);
+  // }
+  
+  
+
+  // return min_distance;
 }
 
 std::vector<DWAPlanner::State> DWAPlanner::generate_trajectory(const double velocity, const double yawrate)
@@ -595,6 +771,7 @@ DWAPlanner::Cost DWAPlanner::evaluate_trajectory(const std::vector<State> &traje
   cost.obs_cost_ = calc_obs_cost(trajectory);
   cost.speed_cost_ = calc_speed_cost(trajectory);
   cost.path_cost_ = calc_path_cost(trajectory);
+  // ROS_INFO_STREAM("Path cost before normalizing: " << cost.path_cost_);
   cost.calc_total_cost();
   return cost;
 }

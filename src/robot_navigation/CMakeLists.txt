@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0.2)
 project(robot_navigation)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++11)
 # add_compile_options(-std=c++17 -O2 -g)
 
 ## Find catkin macros and libraries
@@ -110,8 +110,7 @@ find_package(Eigen3 REQUIRED COMPONENTS system)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
  INCLUDE_DIRS include
-#  LIBRARIES robot_navigation
- LIBRARIES dwa_planner_lib
+ LIBRARIES dwa_planner_lib a_star_lib
  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs tf
 #  DEPENDS system_lib
 )
@@ -130,12 +129,12 @@ include_directories(
 
 ## Declare a C++ library
 add_library(dwa_planner_lib
-  nodes/DWA.cpp
-  nodes/Local_parameter.cpp
+  src/DWA.cpp
+  src/Local_parameter.cpp
 )
 
 add_library(a_star_lib
-  nodes/A_star.cpp
+  src/A_star.cpp
 )
 
 ## Add cmake target dependencies of the library
@@ -147,8 +146,9 @@ add_dependencies(a_star_lib ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTE
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(a_star src/Finding_path.cpp)
-add_executable(dwa_planner src/Finding_localPath.cpp)
+add_executable(dwa_planner nodes/Finding_localPath.cpp src/DWA.cpp src/Local_parameter.cpp)
+add_executable(a_star nodes/Finding_path.cpp)
+
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
