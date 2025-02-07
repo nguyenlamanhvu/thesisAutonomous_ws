@@ -65,9 +65,7 @@ float calculateStepSize(Node2D n)
     return stepSize;
 }
 
-int astar(float sx, float sy, float gx, float gy) {
-
-	nav_msgs::Path astar_path;
+float astar(float sx, float sy, float gx, float gy, nav_msgs::Path& astar_path) {
 	astar_path.header.stamp = ros::Time::now();
 	astar_path.header.frame_id = "/map";
 
@@ -121,7 +119,7 @@ int astar(float sx, float sy, float gx, float gy) {
 		pq.pop();
 
 		current_node = open_list[current_ind.second];
-		// cost_so_far = cost_so_far + current_node.get_cost();
+		cost_so_far = cost_so_far + current_node.get_cost();
 		closed_list[current_ind.second] = current_node;
 		open_list.erase(current_ind.second);
 
@@ -169,7 +167,6 @@ int astar(float sx, float sy, float gx, float gy) {
 
 	// auto end = std::chrono::high_resolution_clock::now();
 	// auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-
 	while(current_node.get_pind() != NULL) {
 		ps.pose.position.x = (current_node.get_x() + grid_originalX / XY_RESOLUTION) * XY_RESOLUTION;
 		ps.pose.position.y = (current_node.get_y() + grid_originalY / XY_RESOLUTION) * XY_RESOLUTION;
@@ -189,7 +186,8 @@ int astar(float sx, float sy, float gx, float gy) {
 	// ROS_INFO("Time of algorithm (microSecond): %ld", elapsed);
 	// ROS_INFO("Cost of path: %.4f", cost_so_far);
 
-	return astar_path.poses.size() * XY_RESOLUTION;
+	// return astar_path.poses.size() * XY_RESOLUTION;
+	return cost_so_far;
 }
 
 
@@ -258,7 +256,8 @@ void callback_goal_pose(const geometry_msgs::PoseStamped::ConstPtr& pose) {
 	
 	path.poses.clear();
 
-	astar(sx, sy, gx, gy);
+	nav_msgs::Path AStarPath;
+	astar(sx, sy, gx, gy, AStarPath);
 }
 
 
@@ -311,3 +310,26 @@ void callback_map(const nav_msgs::OccupancyGrid::Ptr map) {
 	}
 }
 
+/*
+	Service server: Replan A Star path
+*/
+
+bool replanAStar(robot_navigation::ReplanPath::Request &req, 
+                 robot_navigation::ReplanPath::Response &res) {
+    ROS_INFO("Received replan request");
+
+	// Round goal coordinate
+	float start_x = round(req.start_pose.pose.position.x * 10) / 10;
+	float start_y = round(req.start_pose.pose.position.y * 10) / 10;
+	float goal_x = round(req.goal_pose.pose.position.x * 10) / 10;
+	float goal_y = round(req.goal_pose.pose.position.y * 10) / 10;
+
+	start_x = start_x - grid_originalX;
+	start_y = start_y - grid_originalY;
+	goal_x = goal_x - grid_originalX;
+	goal_y = goal_y - grid_originalY;
+
+	res.cost.data = astar(start_x, start_y, goal_x, goal_y, res.planned_path);
+
+    return true;
+}

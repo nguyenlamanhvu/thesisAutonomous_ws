@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.0.2)
 project(robot_navigation)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++11)
-# add_compile_options(-std=c++17 -O2 -g)
+# add_compile_options(-std=c++11)
+add_compile_options(-std=c++17 -O2 -g)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   tf
+  message_generation
 )
 
 find_package(Eigen3 REQUIRED COMPONENTS system)
@@ -60,11 +61,12 @@ find_package(Eigen3 REQUIRED COMPONENTS system)
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  FILES
+  ReplanPath.srv
+#  Service1.srv
+#  Service2.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -74,10 +76,12 @@ find_package(Eigen3 REQUIRED COMPONENTS system)
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   geometry_msgs#   nav_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  geometry_msgs
+  nav_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -111,7 +115,7 @@ find_package(Eigen3 REQUIRED COMPONENTS system)
 catkin_package(
  INCLUDE_DIRS include
  LIBRARIES dwa_planner_lib a_star_lib
- CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs tf
+ CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs tf message_runtime
 #  DEPENDS system_lib
 )
 
@@ -148,6 +152,7 @@ add_dependencies(a_star_lib ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTE
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(dwa_planner nodes/Finding_localPath.cpp src/DWA.cpp src/Local_parameter.cpp)
 add_executable(a_star nodes/Finding_path.cpp)
+add_executable(move_base nodes/Move_base.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -166,6 +171,11 @@ target_link_libraries(dwa_planner
 )
 
 target_link_libraries(a_star
+  ${catkin_LIBRARIES}
+  a_star_lib
+)
+
+target_link_libraries(move_base
   ${catkin_LIBRARIES}
   a_star_lib
 )

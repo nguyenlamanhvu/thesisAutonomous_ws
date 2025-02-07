@@ -20,6 +20,7 @@
 #include <geometry_msgs/PolygonStamped.h>
 #include "std_msgs/String.h"
 #include "std_msgs/Int32.h"
+#include "robot_navigation/ReplanPath.h"
 
 using namespace std;
 
@@ -51,6 +52,12 @@ bool** bin_map; // 2D Binary map of the grid
 int** acc_obs_map;
 
 nav_msgs::Path path; // Astar Path
+
+struct pathPoint {
+	double position_x;
+	double position_y;
+	double orientation_w;
+};
 
 class Node2D {
 
@@ -93,10 +100,12 @@ private:
 
 };
 
-int astar(float sx, float sy, float gx, float gy);
+float astar(float sx, float sy, float gx, float gy, nav_msgs::Path& astar_path);
 void callback_start_pose(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& pose);
 void callback_goal_pose(const geometry_msgs::PoseStamped::ConstPtr& pose);
 void callback_map(const nav_msgs::OccupancyGrid::Ptr map);
 void callback_amcl_pose(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& pose);
+bool replanAStar(robot_navigation::ReplanPath::Request &req, 
+                 robot_navigation::ReplanPath::Response &res);
 
 #endif // ASTAR_HPP

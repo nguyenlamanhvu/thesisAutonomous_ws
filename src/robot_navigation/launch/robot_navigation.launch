@@ -3,6 +3,7 @@
 <launch>
   <arg name="project" default="robot_navigation" />
   <arg name="global_planner" default="a_star" />
+  <arg name="control" default="move_base" />
   
   <arg name="model" default="$(env TURTLEBOT3_MODEL)" doc="model type [burger, waffle, waffle_pi]"/>
   <arg name="x_pos" default="-2.0"/>
@@ -26,6 +27,8 @@
   <node pkg="map_server" name="map_server" type="map_server" args="$(find turtlebot3_navigation)/maps/map.yaml"/>
    
   <node pkg="$(arg project)" type="$(arg global_planner)" name="$(arg global_planner)" output="screen" respawn="true" />
+
+  <node pkg="$(arg project)" type="$(arg control)" name="$(arg control)" output="screen" respawn="true" />
 
   <node pkg="rviz" type="rviz" name="rviz" required="true" args="-d $(find turtlebot3_navigation)/rviz/turtlebot3_navigation.rviz"/>
   

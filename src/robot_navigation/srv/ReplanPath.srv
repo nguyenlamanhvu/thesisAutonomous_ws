@@ -1,0 +1,5 @@
+geometry_msgs/PoseStamped start_pose
+geometry_msgs/PoseStamped goal_pose
+---
+nav_msgs/Path planned_path
+std_msgs/Float32 cost

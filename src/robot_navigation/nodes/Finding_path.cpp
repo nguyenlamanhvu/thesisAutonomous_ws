@@ -19,6 +19,9 @@ int main(int argc, char **argv) {
 	ros::Subscriber map_sub = nh.subscribe("map", 1, callback_map);
 	ros::Subscriber amcl_sub = nh.subscribe("amcl_pose", 1000, callback_amcl_pose);
 
+	// Services
+	ros::ServiceServer service = nh.advertiseService("replan_astar", replanAStar);
+
 	ros::spin();
 
 	return 0;
