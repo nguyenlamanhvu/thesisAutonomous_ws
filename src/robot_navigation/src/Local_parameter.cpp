@@ -39,7 +39,7 @@ void DWAPlanner::load_params(void)
   local_nh_.param<double>("SIM_PERIOD", sim_period_, 0.1);
   local_nh_.param<int>("SIM_TIME_SAMPLES", sim_time_samples_, 10);
   local_nh_.param<double>("SLEEP_TIME_AFTER_FINISH", sleep_time_after_finish_, 0.5);
-  local_nh_.param<double>("SLOW_VELOCITY_TH", slow_velocity_th_, 0.1);
+  local_nh_.param<double>("SLOW_VELOCITY_TH", slow_velocity_th_, 0.05);
   local_nh_.param<double>("SPEED_COST_GAIN", speed_cost_gain_, 0.4);
   local_nh_.param<int>("SUBSCRIBE_COUNT_TH", subscribe_count_th_, 3);
   // - T -

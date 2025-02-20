@@ -18,6 +18,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Quaternion.h>
 #include <geometry_msgs/PolygonStamped.h>
+#include <geometry_msgs/Quaternion.h>
 #include "std_msgs/String.h"
 #include "std_msgs/Int32.h"
 #include "robot_navigation/ReplanPath.h"
@@ -36,6 +37,9 @@ float sx;
 float sy;
 float gx;
 float gy;
+
+float robot_dir_x;
+float robot_dir_y;
 
 geometry_msgs::PointStamped start_point; // Start pose msg
 bool valid_start; // Start pose validity check
@@ -107,5 +111,7 @@ void callback_map(const nav_msgs::OccupancyGrid::Ptr map);
 void callback_amcl_pose(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& pose);
 bool replanAStar(robot_navigation::ReplanPath::Request &req, 
                  robot_navigation::ReplanPath::Response &res);
+void calculateRobotDirection(const geometry_msgs::Quaternion& orientation);
+float calculateScalarProduct(float astar_dir_x, float astar_dir_y);
 
 #endif // ASTAR_HPP

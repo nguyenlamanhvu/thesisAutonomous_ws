@@ -16,9 +16,22 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   tf
   message_generation
+  angles
+  base_local_planner
+  cmake_modules
+  costmap_2d
+  dynamic_reconfigure
+  nav_core
+  pluginlib
+  sensor_msgs
+  tf2
+  tf2_geometry_msgs
+  tf2_ros
 )
 
 find_package(Eigen3 REQUIRED COMPONENTS system)
+
+remove_definitions(-DDISABLE_LIBUSB-1.0)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -64,6 +77,7 @@ find_package(Eigen3 REQUIRED COMPONENTS system)
 add_service_files(
   FILES
   ReplanPath.srv
+  GARequest.srv
 #  Service1.srv
 #  Service2.srv
 )
@@ -98,10 +112,9 @@ generate_messages(
 ##     and list every .cfg file to be processed
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
-# generate_dynamic_reconfigure_options(
-#   cfg/DynReconf1.cfg
-#   cfg/DynReconf2.cfg
-# )
+generate_dynamic_reconfigure_options(
+    config/HybridPlanner.cfg
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -114,8 +127,8 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
  INCLUDE_DIRS include
- LIBRARIES dwa_planner_lib a_star_lib
- CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs tf message_runtime
+ LIBRARIES dwa_planner_lib a_star_lib hybrid_local_planner
+ CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs tf message_runtime base_local_planner dynamic_reconfigure  pluginlib sensor_msgs tf2 tf2_ros
 #  DEPENDS system_lib
 )
 
@@ -129,7 +142,9 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIRS}
+  ${PROJECT_SOURCE_DIR}/include/robot_navigation/hybrid_local_planner
 )
+add_definitions(${EIGEN3_DEFINITIONS})
 
 ## Declare a C++ library
 add_library(dwa_planner_lib
@@ -141,18 +156,27 @@ add_library(a_star_lib
   src/A_star.cpp
 )
 
+add_library(ga_lib
+  src/GA.cpp
+)
+
+add_library(hybrid_local_planner nodes/hybrid_planner_ros.cpp src/hybrid_planner.cpp src/Node.cpp src/Edge.cpp src/Helper.cpp src/AStar_Node.cpp)
+
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
 add_dependencies(dwa_planner_lib ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(a_star_lib ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(ga_lib ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(hybrid_local_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(dwa_planner nodes/Finding_localPath.cpp src/DWA.cpp src/Local_parameter.cpp)
 add_executable(a_star nodes/Finding_path.cpp)
-add_executable(move_base nodes/Move_base.cpp)
+add_executable(move_base_intergrate nodes/Move_base_intergrate.cpp)
+add_executable(ga_planner nodes/Optimize_Path.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -175,10 +199,18 @@ target_link_libraries(a_star
   a_star_lib
 )
 
-target_link_libraries(move_base
+target_link_libraries(move_base_intergrate
   ${catkin_LIBRARIES}
   a_star_lib
+  ga_lib
 )
+
+target_link_libraries(ga_planner
+  ${catkin_LIBRARIES}
+  ga_lib
+)
+
+target_link_libraries(hybrid_local_planner ${catkin_LIBRARIES})
 
 #############
 ## Install ##
@@ -196,9 +228,11 @@ target_link_libraries(move_base
 
 ## Mark executables for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
-# install(TARGETS ${PROJECT_NAME}_node
-#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
+install(TARGETS hybrid_local_planner
+       ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+       LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+       RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+       )
 
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
@@ -209,18 +243,15 @@ target_link_libraries(move_base
 # )
 
 ## Mark cpp header files for installation
-# install(DIRECTORY include/${PROJECT_NAME}/
-#   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-#   FILES_MATCHING PATTERN "*.h"
-#   PATTERN ".svn" EXCLUDE
-# )
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  PATTERN ".svn" EXCLUDE
+)
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
-# install(FILES
-#   # myfile1
-#   # myfile2
-#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-# )
+install(FILES blp_plugin.xml
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
 
 #############
 ## Testing ##

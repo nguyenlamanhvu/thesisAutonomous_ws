@@ -83,10 +83,18 @@
   <test_depend>rostest</test_depend>
   <test_depend>roslint</test_depend>
 
+  <depend>base_local_planner</depend>
+  <depend>costmap_2d</depend>
+  <depend>dynamic_reconfigure</depend>
+  <depend>nav_core</depend>
+  <depend>pluginlib</depend>
+  <depend>tf2</depend>
+  <depend>tf2_geometry_msgs</depend>
+  <depend>tf2_ros</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->
-
+      <nav_core plugin="${prefix}/hlp_plugin.xml" />
   </export>
 </package>

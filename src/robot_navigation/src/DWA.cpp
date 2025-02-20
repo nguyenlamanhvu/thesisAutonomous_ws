@@ -208,7 +208,7 @@ DWAPlanner::dwa_planning(const Eigen::Vector3d &goal, std::vector<std::pair<std:
       traj.first = generate_trajectory(v, y);
       const Cost cost = evaluate_trajectory(traj.first, goal);
       costs.push_back(cost);
-      if (cost.obs_cost_ == 1e6 || cost.path_cost_ == 1e6)
+      if (cost.obs_cost_ == 1e6)
       {
         traj.second = false;
       }
@@ -227,7 +227,7 @@ DWAPlanner::dwa_planning(const Eigen::Vector3d &goal, std::vector<std::pair<std:
       traj.first = generate_trajectory(v, 0.0);
       const Cost cost = evaluate_trajectory(traj.first, goal);
       costs.push_back(cost);
-      if (cost.obs_cost_ == 1e6 || cost.path_cost_ == 1e6)
+      if (cost.obs_cost_ == 1e6)
       {
         traj.second = false;
       }
@@ -266,11 +266,11 @@ DWAPlanner::dwa_planning(const Eigen::Vector3d &goal, std::vector<std::pair<std:
     }
   }
 
-  // ROS_INFO("===");
-  // ROS_INFO_STREAM("(v, y) = (" << best_traj.front().velocity_ << ", " << best_traj.front().yawrate_ << ")");
-  // min_cost.show();
-  // ROS_INFO_STREAM("num of trajectories available: " << available_traj_count << " of " << trajectories.size());
-  // ROS_INFO(" ");
+  ROS_INFO("===");
+  ROS_INFO_STREAM("(v, y) = (" << best_traj.front().velocity_ << ", " << best_traj.front().yawrate_ << ")");
+  min_cost.show();
+  ROS_INFO_STREAM("num of trajectories available: " << available_traj_count << " of " << trajectories.size());
+  ROS_INFO(" ");
 
   return best_traj;
 }
@@ -395,7 +395,7 @@ geometry_msgs::Twist DWAPlanner::calc_cmd_vel(void)
   if (M_PI / 4.0 < fabs(angle_to_goal))
     use_speed_cost_ = true;
 
-  if (hypot(goal_.pose.position.x, goal_.pose.position.y) < 0.8)
+  if (hypot(goal_.pose.position.x, goal_.pose.position.y) < 0.5)
     use_path_cost_ = false;
   else
     use_path_cost_ = true;
@@ -592,9 +592,12 @@ float DWAPlanner::calc_dist_to_path(const std::vector<State> &traj)
   }
 
   auto& trajectory_point = traj.back();
+  double projection_error;
+  double distance;
   for (size_t i = 0; i < edge_points_on_path_.value().poses.size() - 1; ++i) {
     geometry_msgs::Point edge_point1 = edge_points_on_path_.value().poses[i].pose.position;
-    if (hypot(edge_point1.x, edge_point1.y) < 1.0)
+    distance = hypot(edge_point1.x, edge_point1.y);
+    if (distance < 1.5)
     {
       // ROS_INFO_STREAM("Closest point: (" << edge_point1.x << ", " << edge_point1.y << ")");
       geometry_msgs::Point edge_point2 = edge_points_on_path_.value().poses[i+1].pose.position;
@@ -602,12 +605,12 @@ float DWAPlanner::calc_dist_to_path(const std::vector<State> &traj)
       const float b = -(edge_point2.x - edge_point1.x);
       const float c = -a * edge_point1.x - b * edge_point1.y;
 
-      double projection_error = fabs(a * trajectory_point.x_ + b * trajectory_point.y_ + c) / (hypot(a, b) + DBL_EPSILON);
-      if(projection_error < 0.75)  return projection_error;
+      projection_error = fabs(a * trajectory_point.x_ + b * trajectory_point.y_ + c) / (hypot(a, b) + DBL_EPSILON);
+      return projection_error;
     }
   }
 
-  return 1e6;
+  return distance;  
 
 
   // double total_cost = 0.0;

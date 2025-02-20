@@ -16,10 +16,10 @@ bool check_collision(Node2D n)
 {
 	// ROS_INFO("Check collision: bin_map[%d][%d] : %d", (int)n.get_x(), (int)n.get_y(), bin_map[(int)n.get_x()][(int)n.get_y()]);
 
-	int x1 = (int)n.get_x() - 1;
-	int y1 = (int)n.get_y() - 1;
-	int x2 = (int)n.get_x() + 1;
-	int y2 = (int)n.get_y() + 1;
+	int x1 = (int)n.get_x() - 5;
+	int y1 = (int)n.get_y() - 5;
+	int x2 = (int)n.get_x() + 5;
+	int y2 = (int)n.get_y() + 5;
 
 	// Ensure bounds are within the grid
     x1 = std::max(0, std::min(x1, grid_width - 1));
@@ -139,7 +139,7 @@ float astar(float sx, float sy, float gx, float gy, nav_msgs::Path& astar_path) 
 		
 		for (int i = 0; i < motions.size(); ++i) {	
 			node_cost = calc_heuristic_cost(current_node.get_x() + motions[i][0] * stepSize, current_node.get_y() + motions[i][1] * stepSize, gx, gy);
-			node_cost = node_cost + motions[i][2] * stepSize + current_node.get_g_cost();
+			node_cost = node_cost + motions[i][2] * stepSize/*calculateScalarProduct(motions[i][0], motions[i][1]) */ + current_node.get_g_cost();
 			float theta = atan2(motions[i][1], motions[i][0]);
 			new_node = Node2D(current_node.get_x() + motions[i][0], current_node.get_y() + motions[i][1], theta, node_cost, current_ind.second);
 			new_node.set_g_cost(motions[i][2] + current_node.get_g_cost());
@@ -211,6 +211,8 @@ void callback_start_pose(const geometry_msgs::PoseWithCovarianceStamped::ConstPt
 	sx = start_x - grid_originalX;
 	sy = start_y - grid_originalY;
 
+	calculateRobotDirection(pose->pose.pose.orientation);
+
 	// path.poses.clear();
 
 	// astar(sx, sy, gx, gy);
@@ -230,6 +232,8 @@ void callback_amcl_pose(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr
 	sy = start_y - grid_originalY;
 
 	ROS_INFO_STREAM("Receive amcl pose: " << sx << ", " << sy);
+
+	calculateRobotDirection(pose->pose.pose.orientation);
 }
 
 
@@ -328,8 +332,28 @@ bool replanAStar(robot_navigation::ReplanPath::Request &req,
 	start_y = start_y - grid_originalY;
 	goal_x = goal_x - grid_originalX;
 	goal_y = goal_y - grid_originalY;
+	calculateRobotDirection(req.start_pose.pose.orientation);
 
 	res.cost.data = astar(start_x, start_y, goal_x, goal_y, res.planned_path);
 
     return true;
+}
+
+void calculateRobotDirection(const geometry_msgs::Quaternion& orientation)
+{
+    double qw = orientation.w;
+    double qx = orientation.x;
+    double qy = orientation.y;
+    double qz = orientation.z;
+    double yaw = atan2(2.0 * (qw * qz + qx * qy), 1.0 - 2.0 * (qy * qy + qz * qz));
+    robot_dir_x = cos(yaw);
+    robot_dir_y = sin(yaw);
+} 
+
+float calculateScalarProduct(float astar_dir_x, float astar_dir_y)
+{
+	// Compute dot product
+	float dot_product = robot_dir_x * astar_dir_x + robot_dir_y * astar_dir_y;
+
+	return ((1.0-dot_product)/2.0);
 }
