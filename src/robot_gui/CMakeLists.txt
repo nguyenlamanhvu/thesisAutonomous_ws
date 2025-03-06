@@ -9,6 +9,8 @@ project(robot_gui)
 set(ROS_DEPENDS
   roscpp
   std_msgs
+  rviz
+  robot_navigation
   )
 
 set(EXTERNAL_DEPENDS
@@ -33,8 +35,8 @@ set(INCLUDE_DIRECTORIES
 ##  Be Carefull editing below this line ##
 ##########################################
 
-## Compile as C++14
-add_compile_options(-std=c++14)
+## Compile as C++17
+add_compile_options(-std=c++17 -Wno-register)
 
 ## need this for qt auto generated headers to include!
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -51,6 +53,7 @@ endforeach(DEPEND)
 ###  Add any required ros packages here
 ###
 find_package(catkin REQUIRED COMPONENTS ${ROS_DEPENDS})
+find_package(OpenCV REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS
@@ -69,6 +72,7 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${INCLUDE_DIRECTORIES}
+  ${OpenCV_INCLUDE_DIRS}
 )
 
 ###########
@@ -128,7 +132,7 @@ foreach(NODE_FILE ${NODES})
 
   add_executable(${NODE_NAME} ${NODE_FILE} ${HDRS} ${SRCS} ${UI} ${QRC})
   add_dependencies(${NODE_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-  target_link_libraries (${NODE_NAME} ${catkin_LIBRARIES}  ${EXTERNAL_DEPENDS_LIB})
+  target_link_libraries (${NODE_NAME} ${catkin_LIBRARIES}  ${EXTERNAL_DEPENDS_LIB} ${OpenCV_LIBS})
   target_include_directories(${NODE_NAME} PRIVATE "include/${PROJECT_NAME}/")
 
   list(APPEND NODE_LIST ${NODE_NAME})

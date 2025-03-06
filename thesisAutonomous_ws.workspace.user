@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 4.9.2, 2024-12-31T03:00:53. -->
+<!-- Written by QtCreator 4.9.2, 2025-03-05T01:41:31. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -102,21 +102,9 @@
     <value type="int" key="ProjectExplorer.BuildConfiguration.BuildStepListCount">2</value>
     <value type="bool" key="ProjectExplorer.BuildConfiguration.ClearSystemEnvironment">false</value>
     <valuelist type="QVariantList" key="ProjectExplorer.BuildConfiguration.UserEnvironmentChanges">
-     <value type="QString">CMAKE_PREFIX_PATH=/home/lamanhvu/thesisAutonomous_ws/devel:/home/lamanhvu/camera_ws/devel:/home/lamanhvu/imu_ws/devel:/opt/ros/noetic</value>
-     <value type="QString">LD_LIBRARY_PATH=/home/lamanhvu/thesisAutonomous_ws/devel/lib:/home/lamanhvu/camera_ws/devel/lib:/home/lamanhvu/imu_ws/devel/lib:/opt/ros/noetic/lib:/opt/ros/noetic/lib/x86_64-linux-gnu</value>
-     <value type="QString">PATH=/opt/ros/noetic/bin:/home/lamanhvu/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin</value>
-     <value type="QString">PKG_CONFIG_PATH=/home/lamanhvu/thesisAutonomous_ws/devel/lib/pkgconfig:/home/lamanhvu/camera_ws/devel/lib/pkgconfig:/home/lamanhvu/imu_ws/devel/lib/pkgconfig:/opt/ros/noetic/lib/pkgconfig:/opt/ros/noetic/lib/x86_64-linux-gnu/pkgconfig</value>
      <value type="QString">PWD=/home/lamanhvu/thesisAutonomous_ws</value>
-     <value type="QString">PYTHONPATH=/home/lamanhvu/thesisAutonomous_ws/devel/lib/python3/dist-packages:/home/lamanhvu/camera_ws/devel/lib/python3/dist-packages:/opt/ros/noetic/lib/python3/dist-packages</value>
-     <value type="QString">ROSLISP_PACKAGE_DIRECTORIES=/home/lamanhvu/thesisAutonomous_ws/devel/share/common-lisp:/home/lamanhvu/camera_ws/devel/share/common-lisp:/home/lamanhvu/imu_ws/devel/share/common-lisp</value>
-     <value type="QString">ROS_DISTRO=noetic</value>
-     <value type="QString">ROS_ETC_DIR=/opt/ros/noetic/etc/ros</value>
      <value type="QString">ROS_MASTER_URI=http://localhost:11311</value>
-     <value type="QString">ROS_PACKAGE_PATH=/home/lamanhvu/thesisAutonomous_ws/src:/home/lamanhvu/camera_ws/src:/home/lamanhvu/imu_ws/src:/opt/ros/noetic/share</value>
-     <value type="QString">ROS_PYTHON_VERSION=3</value>
-     <value type="QString">ROS_ROOT=/opt/ros/noetic/share/ros</value>
-     <value type="QString">ROS_VERSION=1</value>
-     <value type="QString">SHLVL=404</value>
+     <value type="QString">SHLVL=169</value>
      <value type="QString">TERM=xterm</value>
      <value type="QString">_=/usr/bin/env</value>
     </valuelist>

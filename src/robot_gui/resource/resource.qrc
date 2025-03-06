@@ -1,5 +1,9 @@
 <RCC>
     <qresource prefix="/Icons">
         <file>Search_Icon.png</file>
+        <file>my_gui_icon.png</file>
+        <file>Loading.gif</file>
+        <file>Checkout_Counter.png</file>
+        <file>Clear.png</file>
     </qresource>
 </RCC>

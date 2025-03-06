@@ -228,7 +228,7 @@ bool PathPlanningGA::handleGARequest(robot_navigation::GARequest::Request &req,
     std::vector<std::string> optimalPath = optimize();
 
     std::cout << "\nOptimal path from " << startLocation << ":\n";
-    res.GA_result.push_back(startLocation);
+    // res.GA_result.push_back(startLocation);
     for (const auto& location : optimalPath) {
         std::cout << location << " -> ";
         res.GA_result.push_back(location);

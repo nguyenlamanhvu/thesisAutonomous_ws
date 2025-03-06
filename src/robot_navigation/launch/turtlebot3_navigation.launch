@@ -8,6 +8,7 @@
   <arg name="global_planner" default="a_star" />
   <arg name="control" default="move_base_intergrate" />
   <arg name="optimize_path" default="ga_planner" />
+  <arg name="open_gui" default="true"/>
 
   <!-- Turtlebot3 -->
   <include file="$(find turtlebot3_bringup)/launch/turtlebot3_remote.launch">
@@ -40,5 +41,10 @@
   <group if="$(arg open_rviz)">
     <node pkg="rviz" type="rviz" name="rviz" required="true"
           args="-d $(find robot_navigation)/rviz/GA_AStar_Hybrid.rviz"/>
+  </group>
+
+  <!-- QT gui -->
+  <group if="$(arg open_gui)">
+    <include file="$(find robot_gui)/launch/robot_gui.launch"/>
   </group>
 </launch>

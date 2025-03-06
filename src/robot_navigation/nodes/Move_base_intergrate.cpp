@@ -32,6 +32,7 @@ private:
 
     ros::Subscriber ga_planning_sub;
     ros::ServiceClient replan_ga_planning_client;
+    ros::ServiceServer ga_gui_server;
 
     ros::Publisher ga_optimize_path_pub;
     ros::Publisher destinations_pub;
@@ -44,6 +45,49 @@ private:
     {
         ROS_INFO_STREAM("Create Astar Result Callback");
         createJsonFile();
+    }
+
+    bool handleGAGUIRequest(robot_navigation::GARequest::Request &req,
+        robot_navigation::GARequest::Response &res)
+    {
+        gaResult.clear();
+        ROS_INFO("Received GUI request:");
+
+        robot_navigation::GARequest srv;
+
+        srv.request.start = req.start;
+        srv.request.destinations = req.destinations;
+
+        if (replan_ga_planning_client.call(srv))
+        {
+            res.GA_result = srv.response.GA_result;
+            gaResult = res.GA_result;
+            gaResult.insert(gaResult.begin(), "Start");
+        }
+        else
+        {
+            ROS_ERROR("Failed to call GA service");
+        }
+
+        nav_msgs::Path ga_optimize_path;
+        ga_optimize_path.header.stamp = ros::Time::now();
+        ga_optimize_path.header.frame_id = "/map";
+
+        for (uint32_t i = gaResult.size() - 1; i > 0; i--)
+        {
+            std::string filename = "/home/lamanhvu/thesisAutonomous_ws/src/robot_navigation/AStarResult/" + gaResult[i-1] + "To" + gaResult[i] + ".json";
+            ROS_INFO_STREAM("A Star path: " << gaResult[i-1] << " To " << gaResult[i]);
+            readAStarPath(filename, ga_optimize_path);
+        }
+
+        visualization_msgs::Marker ga_point_path = createWaypointsMarker();
+
+        ga_optimize_path_pub.publish(ga_optimize_path);
+        destinations_pub.publish(ga_point_path);
+
+        gaResultIndex = 1;
+        publishPathAndGoal();
+        return true;
     }
 
     void ga_planning_callback(const std_msgs::Empty::ConstPtr &msg)
@@ -64,6 +108,7 @@ private:
         if (replan_ga_planning_client.call(srv))
         {
             gaResult = srv.response.GA_result;
+            gaResult.insert(gaResult.begin(), "Start");
         }
         else
         {
@@ -72,7 +117,7 @@ private:
 
         nav_msgs::Path ga_optimize_path;
         ga_optimize_path.header.stamp = ros::Time::now();
-	    ga_optimize_path.header.frame_id = "/map";
+        ga_optimize_path.header.frame_id = "/map";
 
         for (uint32_t i = gaResult.size() - 1; i > 0; i--)
         {
@@ -94,7 +139,7 @@ private:
     void finish_flag_callback(const std_msgs::Bool::ConstPtr &msg) {
         if(msg->data == true) {
             gaResultIndex++;
-            if(gaResultIndex >= gaResult.size() - 1) gaResultIndex = gaResult.size() - 1;
+            if(gaResultIndex >= gaResult.size()) return;
             publishPathAndGoal();
         }
     }
@@ -167,6 +212,7 @@ public:
 
         ga_planning_sub = nh.subscribe("GA_Planning", 10, &MoveBase::ga_planning_callback, this);
         replan_ga_planning_client = nh.serviceClient<robot_navigation::GARequest>("GA_optimize");
+        ga_gui_server = nh.advertiseService("GUI_search_optimize", &MoveBase::handleGAGUIRequest, this);
 
         ga_optimize_path_pub = nh.advertise<nav_msgs::Path>("/global_path/ga_path", 1000);
         destinations_pub = nh.advertise<visualization_msgs::Marker>("/global_path/destinations_point", 1000);

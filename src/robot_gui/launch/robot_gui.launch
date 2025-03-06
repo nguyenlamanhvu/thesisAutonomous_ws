@@ -1,0 +1,3 @@
+<launch>
+  <node name="robot_gui_node" pkg="robot_gui" type="robot_gui_node" output="screen" ns="/"/>
+</launch>
