@@ -8,6 +8,8 @@ int main(int argc, char *argv[])
 
   robot_gui robotGui;
   robotGui.setWindowTitle(QString::fromStdString(ros::this_node::getName()));
+  robotGui.setWindowFlags(Qt::FramelessWindowHint);
+  robotGui.showFullScreen();
   QIcon icon(":/Icons/my_gui_icon.png");
   robotGui.setWindowIcon(icon);
   robotGui.show();
