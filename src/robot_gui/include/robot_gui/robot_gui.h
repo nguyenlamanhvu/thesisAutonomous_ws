@@ -10,7 +10,12 @@
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/PolygonStamped.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <robot_navigation/GARequest.h>
+#include <dynamic_reconfigure/Reconfigure.h>
+#include <dynamic_reconfigure/DoubleParameter.h>
+#include <dynamic_reconfigure/Config.h>
+#include <actionlib_msgs/GoalID.h>
 #include <QDateTime>
 #include <QDebug>
 #include <QTimer>
@@ -94,6 +99,8 @@ private slots:
 
   void on_btnIncreaseVelocity_clicked();
 
+  void on_btnStopResume_clicked();
+
 protected:
 #if USE_MAP_RVIZ
 
@@ -134,6 +141,9 @@ private:
   ros::ServiceClient search_optimize_path_client;
   ros::Subscriber footprintSub;
   ros::Subscriber amcl_pose_sub;
+  ros::ServiceClient set_param_client;
+  ros::Publisher stop_robot_pub;
+  ros::Publisher resume_robot_pub;
 
   QVector<QPointF> footprintPoints;
   QVector<QString> choosenProductName;

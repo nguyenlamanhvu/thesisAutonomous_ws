@@ -122,6 +122,9 @@ robot_gui::robot_gui(QWidget *parent) :
   search_optimize_path_client = nh_->serviceClient<robot_navigation::GARequest>("/GUI_search_optimize");
   footprintSub = nh_->subscribe("/move_base/local_costmap/footprint", 1, &robot_gui::footprint_callback, this);
   amcl_pose_sub = nh_->subscribe("/amcl_pose", 1, &robot_gui::amcl_pose_callback, this);
+  set_param_client = nh_->serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/HybridPlannerROS/set_parameters");
+  stop_robot_pub = nh_->advertise<actionlib_msgs::GoalID>("/move_base/cancel", 10);
+  resume_robot_pub = nh_->advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1000);
 }
 
 robot_gui::~robot_gui()
@@ -550,6 +553,20 @@ void robot_gui::on_btnDecreaseVelocity_clicked()
 {
     maxVelocity -= 0.05;
     nh_->setParam("/move_base/HybridPlannerROS/max_vel_trans", maxVelocity);
+    dynamic_reconfigure::Reconfigure srv;
+    dynamic_reconfigure::DoubleParameter param;
+    param.name = "max_vel_trans";
+    param.value = maxVelocity;
+    srv.request.config.doubles.push_back(param);
+    param.name = "max_vel_x";
+    param.value = maxVelocity;
+    srv.request.config.doubles.push_back(param);
+
+    if (set_param_client.call(srv)) {
+        ROS_INFO("Updated successful");
+    } else {
+        ROS_ERROR("Failed to update");
+    }
 
     if (nh_->getParam("/move_base/HybridPlannerROS/max_vel_trans", maxVelocity))
     {
@@ -559,11 +576,66 @@ void robot_gui::on_btnDecreaseVelocity_clicked()
 
 void robot_gui::on_btnIncreaseVelocity_clicked()
 {
-  maxVelocity += 0.05;
-  nh_->setParam("/move_base/HybridPlannerROS/max_vel_trans", maxVelocity);
+    maxVelocity += 0.05;
+    nh_->setParam("/move_base/HybridPlannerROS/max_vel_trans", maxVelocity);
+    dynamic_reconfigure::Reconfigure srv;
+    dynamic_reconfigure::DoubleParameter param;
+    param.name = "max_vel_trans";
+    param.value = maxVelocity;
+    srv.request.config.doubles.push_back(param);
+    param.name = "max_vel_x";
+    param.value = maxVelocity;
+    srv.request.config.doubles.push_back(param);
 
-  if (nh_->getParam("/move_base/HybridPlannerROS/max_vel_trans", maxVelocity))
-  {
-      ui->lblMaxVelocity->setText(QString::number(maxVelocity) + " m/s");
-  }
+    if (set_param_client.call(srv)) {
+        ROS_INFO("Updated successful");
+    } else {
+        ROS_ERROR("Failed to update");
+    }
+
+    if (nh_->getParam("/move_base/HybridPlannerROS/max_vel_trans", maxVelocity))
+    {
+        ui->lblMaxVelocity->setText(QString::number(maxVelocity) + " m/s");
+    }
+}
+
+void robot_gui::on_btnStopResume_clicked()
+{
+    if (ui->btnStopResume->text() == "STOP")
+    {
+        ui->btnStopResume->setText("RESUME");
+        actionlib_msgs::GoalID cancel_msg;
+        stop_robot_pub.publish(cancel_msg);
+    }
+    else
+    {
+        ui->btnStopResume->setText("STOP");
+        std::string filePath = "/home/lamanhvu/thesisAutonomous_ws/src/robot_navigation/ProductPose/"
+            + choosenProductName[gaResultIndex].toStdString() + ".json";
+        std::ifstream fileJSON(filePath); // Open the JSON file
+        if (!fileJSON) {
+            std::cerr << "Error: Cannot open file!" << std::endl;
+            return;
+        }
+
+        json j;
+        fileJSON >> j; // Parse JSON data
+
+        // Extract position and orientation
+        std::vector<double> position = j["positon"]; // Note: Key is "positon" (typo in JSON)
+        std::vector<double> orientation = j["orientation"];
+
+        geometry_msgs::PoseStamped pose;
+        pose.header.stamp = ros::Time::now();
+        pose.header.frame_id = "map";
+        pose.pose.position.x = position[0];
+        pose.pose.position.y = position[1];
+        pose.pose.position.z = position[2];
+        pose.pose.orientation.x = orientation[0];
+        pose.pose.orientation.y = orientation[1];
+        pose.pose.orientation.z = orientation[2];
+        pose.pose.orientation.w = orientation[3];
+
+        resume_robot_pub.publish(pose);
+    }
 }

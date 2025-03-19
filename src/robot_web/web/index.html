@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROSBridge Web Interface</title>
+    <script src="https://cdn.jsdelivr.net/npm/roslib/build/roslib.min.js"></script>
+</head>
+<body>
+    <h1>ROSBridge WebSocket Test</h1>
+    <p>Status: <span id="status">Disconnected</span></p>
+    <button onclick="sendCommand()">Send /cmd_vel</button>
+
+    <script>
+        var ros = new ROSLIB.Ros({
+            url: 'ws://localhost:9090'  // Connect to ROSBridge server
+        });
+
+        ros.on('connection', function() {
+            document.getElementById('status').innerText = 'Connected';
+            console.log('Connected to ROSBridge');
+        });
+
+        ros.on('error', function(error) {
+            document.getElementById('status').innerText = 'Error';
+            console.log('Error:', error);
+        });
+
+        ros.on('close', function() {
+            document.getElementById('status').innerText = 'Disconnected';
+            console.log('Connection closed.');
+        });
+
+        var cmdVel = new ROSLIB.Topic({
+            ros: ros,
+            name: '/cmd_vel',
+            messageType: 'geometry_msgs/Twist'
+        });
+
+        function sendCommand() {
+            var twist = new ROSLIB.Message({
+                linear: { x: 0.5, y: 0, z: 0 },
+                angular: { x: 0, y: 0, z: 0.2 }
+            });
+            cmdVel.publish(twist);
+            console.log('Command sent:', twist);
+        }
+    </script>
+</body>
+</html>
