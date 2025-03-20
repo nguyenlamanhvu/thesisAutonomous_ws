@@ -19,6 +19,9 @@ void PathPlanningGA::loadCostData(const std::string& start, const std::vector<st
     // Add start location and destinations to locationNames
     locationNames.push_back(start);
     locationNames.insert(locationNames.end(), destinations.begin(), destinations.end());
+    if (hasEndLocation) {
+        locationNames.push_back(endLocation);
+    }
     
     // Create index mappings
     for (size_t i = 0; i < locationNames.size(); ++i) {
@@ -73,7 +76,7 @@ double PathPlanningGA::calculateFitness(const std::vector<int>& chromosome) {
     double totalCost = 0.0;
     std::string currentLoc = startLocation;
 
-    // Calculate total path cost
+    // Calculate path through destinations
     for (int index : chromosome) {
         std::string nextLoc = indexToLocation[index];
         auto costPair = std::make_pair(currentLoc, nextLoc);
@@ -87,7 +90,17 @@ double PathPlanningGA::calculateFitness(const std::vector<int>& chromosome) {
         currentLoc = nextLoc;
     }
 
-    return 1.0 / (totalCost + 1.0); // Convert cost to fitness (higher is better)
+    // Add cost to end location if specified
+    if (hasEndLocation) {
+        auto finalCostPair = std::make_pair(currentLoc, endLocation);
+        if (costMap.find(finalCostPair) != costMap.end()) {
+            totalCost += costMap[finalCostPair];
+        } else {
+            totalCost += 99999999;
+        }
+    }
+
+    return 1.0 / (totalCost + 1.0);
 }
 
 std::vector<int> PathPlanningGA::crossover(const std::vector<int>& parent1, const std::vector<int>& parent2) {
@@ -173,6 +186,11 @@ std::vector<std::string> PathPlanningGA::optimize() {
         optimalPath.push_back(indexToLocation[index]);
     }
 
+    // Add end location to path if specified
+    if (hasEndLocation) {
+        optimalPath.push_back(endLocation);
+    }
+
     return optimalPath;
 }
 
@@ -208,10 +226,14 @@ double PathPlanningGA::getCostFromJson(const std::string& from, const std::strin
     return 999999; // Return large cost if path not found
 }
 
+void PathPlanningGA::setEndPosition(const std::string& end) {
+    endLocation = end;
+    hasEndLocation = true;
+}
+
 bool PathPlanningGA::handleGARequest(robot_navigation::GARequest::Request &req,
                 robot_navigation::GARequest::Response &res)
 {
-    ROS_INFO("Received string array request:");
     // ROS_INFO("  - %s", req.start.c_str());
     // res.GA_result.push_back("GA result for: " + req.start);
     // for (const auto &s : req.destinations)
@@ -221,7 +243,27 @@ bool PathPlanningGA::handleGARequest(robot_navigation::GARequest::Request &req,
     // }
 
     std::string startLocation = req.start;
+    ROS_INFO_STREAM("Receive request:" << startLocation);
     std::vector<std::string> destinations = req.destinations;
+    for (const auto &s : req.destinations)
+    {
+        ROS_INFO("  - %s", s.c_str());
+    }
+
+    for (const auto &s : req.destinations)
+    {
+        if (s == "CheckoutCounter") {
+            setEndPosition(s);
+            
+            auto it = std::find(destinations.begin(), destinations.end(), s);
+            if (it != destinations.end()) {
+                destinations.erase(it);
+            }
+            
+            break;
+        }
+    }
+
 
     loadCostData(startLocation, destinations);
     initializePopulation(startLocation, destinations);
@@ -235,6 +277,7 @@ bool PathPlanningGA::handleGARequest(robot_navigation::GARequest::Request &req,
     }
     std::cout << "End\n";
     // res.GA_result.push_back("End");
+    hasEndLocation = false;
 
     return true;
 }

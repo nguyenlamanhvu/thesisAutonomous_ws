@@ -40,6 +40,8 @@ private:
     std::map<std::pair<std::string, std::string>, double> costMap;
     std::vector<std::string> locationNames;
     std::string startLocation;
+    std::string endLocation;
+    bool hasEndLocation = false;
 
     // Convert location names to indices for easier manipulation
     std::map<std::string, int> locationToIndex;
@@ -60,6 +62,8 @@ public:
     void mutate(std::vector<int>& chromosome);
 
     std::vector<std::string> optimize();
+
+    void setEndPosition(const std::string& end);
 
 private:
     Individual tournament(int tournamentSize = 5);

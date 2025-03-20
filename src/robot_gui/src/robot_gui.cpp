@@ -221,7 +221,7 @@ void robot_gui::loadProductName(){
               }
 
               // Skip if product name is "Start" and "End"
-              if((fileName.compare("Start") == 0) || (fileName.compare("Checkout Counter") == 0))
+              if((fileName.compare("Start") == 0) || (fileName.compare("CheckoutCounter") == 0))
               {
                   continue;
               }
@@ -284,7 +284,7 @@ void robot_gui::updateSuggestions(const QString &text) {
     for(uint32_t index = 0; index < fileJsonData.size(); index++)
     {
       // Skip if product name is "Start" and "End"
-        if((fileJsonData[index].fileName.compare("Start") == 0) || (fileJsonData[index].fileName.compare("Checkout Counter") == 0))
+        if((fileJsonData[index].fileName.compare("Start") == 0) || (fileJsonData[index].fileName.compare("CheckoutCounter") == 0))
         {
             continue;
         }
@@ -349,9 +349,9 @@ void robot_gui::on_btSearch_clicked()
                                           new QTableWidgetItem(choosenProductName[idx]));
           }
           gaResultIndex = 0;
-          QTableWidgetItem *item = new QTableWidgetItem(choosenProductName[gaResultIndex]);
-          item->setForeground(QBrush(Qt::red));
-          ui->wdgTableShopping->setItem(gaResultIndex, TableRowProduct::choosenProducts, item);
+//          QTableWidgetItem *item = new QTableWidgetItem(choosenProductName[gaResultIndex]);
+//          item->setForeground(QBrush(Qt::red));
+//          ui->wdgTableShopping->setItem(gaResultIndex, TableRowProduct::choosenProducts, item);
         }, Qt::QueuedConnection);
     }
     else
@@ -365,14 +365,14 @@ void robot_gui::on_btSearch_clicked()
 void robot_gui::finish_flag_callback(const std_msgs::Bool::ConstPtr &msg) {
     if(msg->data == true) {
         gaResultIndex++;
-        if(gaResultIndex >= choosenProductName.size())
+        if(gaResultIndex > choosenProductName.size())
         {
 
             return;
         }
-        QTableWidgetItem *item = new QTableWidgetItem(choosenProductName[gaResultIndex]);
+        QTableWidgetItem *item = new QTableWidgetItem(choosenProductName[gaResultIndex-1]);
         item->setForeground(QBrush(Qt::red));
-        ui->wdgTableShopping->setItem(gaResultIndex, TableRowProduct::choosenProducts, item);
+        ui->wdgTableShopping->setItem(gaResultIndex-1, TableRowProduct::choosenProducts, item);
     }
 }
 
@@ -638,4 +638,11 @@ void robot_gui::on_btnStopResume_clicked()
 
         resume_robot_pub.publish(pose);
     }
+}
+
+void robot_gui::on_btCheckoutCounter_clicked()
+{
+  choosenProductName.push_back("CheckoutCounter");
+  ui->wdgTableShopping->setItem(choosenProductName.count() - 1, TableRowProduct::choosenProducts,
+                                new QTableWidgetItem("CheckoutCounter"));
 }

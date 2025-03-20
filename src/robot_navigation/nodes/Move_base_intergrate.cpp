@@ -62,7 +62,7 @@ private:
         {
             res.GA_result = srv.response.GA_result;
             gaResult = res.GA_result;
-            gaResult.insert(gaResult.begin(), "Start");
+            gaResult.insert(gaResult.begin(), req.start);
         }
         else
         {

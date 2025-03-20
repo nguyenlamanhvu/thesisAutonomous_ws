@@ -101,6 +101,8 @@ private slots:
 
   void on_btnStopResume_clicked();
 
+  void on_btCheckoutCounter_clicked();
+
 protected:
 #if USE_MAP_RVIZ
 
