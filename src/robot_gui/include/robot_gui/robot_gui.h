@@ -38,6 +38,8 @@
 #include <rviz/properties/float_property.h>
 #elif !USE_MAP_RVIZ
 #include <nav_msgs/OccupancyGrid.h>
+#include <visualization_msgs/Marker.h>
+#include <nav_msgs/Path.h>
 #include <opencv2/opencv.hpp>
 #include <QImage>
 #include <QPoint>
@@ -124,7 +126,11 @@ private:
   rviz::VisualizationManager *viz_manager;
 #elif !USE_MAP_RVIZ
   ros::Subscriber map_sub;
+  ros::Subscriber destinations_sub;
+  ros::Subscriber ga_optimize_path_sub;
   void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &msg);
+  void destinationsCallback(const visualization_msgs::Marker::ConstPtr& msg);
+  void gaOptimizePathCallback(const nav_msgs::Path::ConstPtr& msg);
   void updateMapDisplay();
   bool gestureEvent(QGestureEvent *event);
   void pinchTriggered(QPinchGesture *gesture);
@@ -133,7 +139,8 @@ private:
   QPoint mapOffset = QPoint(0, 0);
   double mapScaleFactor = 1.0;  // Default zoom level
   QPixmap mapPixmap;  // Stores the displayed map
-
+  QVector<QPointF>  destinationPoints;
+  QVector<QPointF>  gaPathPoints;
   float mapResolution;
 #endif //USE_MAP_RIVZ
 

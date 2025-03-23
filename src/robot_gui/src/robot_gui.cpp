@@ -114,6 +114,8 @@ robot_gui::robot_gui(QWidget *parent) :
 #elif !USE_MAP_RVIZ
   // Subscribe to /map topic
   map_sub = nh_->subscribe("/map", 1, &robot_gui::mapCallback, this);
+  destinations_sub = nh_->subscribe("/global_path/destinations_point", 1000, &robot_gui::destinationsCallback, this);
+  ga_optimize_path_sub = nh_->subscribe("/global_path/ga_path", 1000, &robot_gui::gaOptimizePathCallback, this);
   grabGesture(Qt::PinchGesture);
 #endif // USE_MAP_RVIZ
 
@@ -349,30 +351,38 @@ void robot_gui::on_btSearch_clicked()
                                           new QTableWidgetItem(choosenProductName[idx]));
           }
           gaResultIndex = 0;
-//          QTableWidgetItem *item = new QTableWidgetItem(choosenProductName[gaResultIndex]);
-//          item->setForeground(QBrush(Qt::red));
-//          ui->wdgTableShopping->setItem(gaResultIndex, TableRowProduct::choosenProducts, item);
+          QTableWidgetItem *item = new QTableWidgetItem(choosenProductName[gaResultIndex]);
+          item->setForeground(QBrush(Qt::blue));
+          ui->wdgTableShopping->setItem(gaResultIndex, TableRowProduct::choosenProducts, item);
         }, Qt::QueuedConnection);
     }
     else
     {
         ROS_ERROR("Failed to call GA service");
     }
-    QMetaObject::invokeMethod(loading, "close", Qt::QueuedConnection);
+
+    if (!loading->isClosed()) {
+        loading->userNotForceClose();
+        QMetaObject::invokeMethod(loading, "close", Qt::QueuedConnection);
+    }
   });
 }
 
 void robot_gui::finish_flag_callback(const std_msgs::Bool::ConstPtr &msg) {
     if(msg->data == true) {
-        gaResultIndex++;
-        if(gaResultIndex > choosenProductName.size())
-        {
+        QTableWidgetItem *item = new QTableWidgetItem(choosenProductName[gaResultIndex]);
+        item->setForeground(QBrush(Qt::red));
+        ui->wdgTableShopping->setItem(gaResultIndex, TableRowProduct::choosenProducts, item);
 
+        gaResultIndex++;
+        if(gaResultIndex >= choosenProductName.size())
+        {
             return;
         }
-        QTableWidgetItem *item = new QTableWidgetItem(choosenProductName[gaResultIndex-1]);
-        item->setForeground(QBrush(Qt::red));
-        ui->wdgTableShopping->setItem(gaResultIndex-1, TableRowProduct::choosenProducts, item);
+
+        item = new QTableWidgetItem(choosenProductName[gaResultIndex]);
+        item->setForeground(QBrush(Qt::blue));
+        ui->wdgTableShopping->setItem(gaResultIndex, TableRowProduct::choosenProducts, item);
     }
 }
 
@@ -415,10 +425,9 @@ void robot_gui::updateMapDisplay(void)
         QPainter painter(&mapPixmap);
         painter.setRenderHint(QPainter::Antialiasing);
 
-        // Flip & scale the map image
-        QImage flippedImage = mapImage.mirrored(false, true);
+        // Scale the map image without flipping
         QSize scaledSize = mapImage.size() * mapScaleFactor;
-        QImage scaledImage = flippedImage.scaled(scaledSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        QImage scaledImage = mapImage.scaled(scaledSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
         QPoint drawPosition = mapOffset + QPoint(
             (ui->wdgMap->width() - scaledImage.width()) / 2,
@@ -439,12 +448,12 @@ void robot_gui::updateMapDisplay(void)
             for (const auto &point : footprintPoints)
             {
                 double x = mapCenter.x() + (point.x() / mapResolution + 6) * mapScaleFactor;
-                double y = mapCenter.y() - (point.y() / mapResolution + 7) * mapScaleFactor;
+                double y = mapCenter.y() + (point.y() / mapResolution + 7) * mapScaleFactor;
 
                 transformedFootprint.push_back(QPointF(x, y));
             }
 
-            //Use drawPolygon to correctly draw footprint
+            // Use drawPolygon to correctly draw footprint
             if (transformedFootprint.size() > 2)
             {
                 painter.drawPolygon(transformedFootprint);
@@ -459,10 +468,43 @@ void robot_gui::updateMapDisplay(void)
             }
         }
 
-        //Force UI update
+        if (!destinationPoints.isEmpty()) {
+            QPen pen(Qt::blue);
+            pen.setWidth(5);
+            painter.setPen(pen);
+
+            for (const auto& point : destinationPoints) {
+                double x = mapCenter.x() + (point.x() / mapResolution + 6) * mapScaleFactor;
+                double y = mapCenter.y() + (point.y() / mapResolution + 7) * mapScaleFactor;
+                painter.drawEllipse(QPointF(x,y), 1, 1);  // Draw points as small circles
+            }
+        }
+
+        if (!gaPathPoints.isEmpty())
+        {
+            QPen pen(Qt::green);
+            pen.setWidth(1);
+            painter.setPen(pen);
+
+            QVector<QPointF> transformedPath;
+
+            for (const auto &point : gaPathPoints)
+            {
+                double x = mapCenter.x() + (point.x() / mapResolution + 6) * mapScaleFactor;
+                double y = mapCenter.y() + (point.y() / mapResolution + 7) * mapScaleFactor;
+                transformedPath.push_back(QPointF(x, y));
+            }
+
+            for (int i = 0; i < transformedPath.size() - 1; ++i)
+            {
+                painter.drawLine(transformedPath[i], transformedPath[i + 1]);
+            }
+        }
+
+        // Force UI update
         ui->wdgMap->update();
 
-        //Apply the updated mapPixmap as background of QWidget
+        // Apply the updated mapPixmap as background of QWidget
         QPalette palette;
         palette.setBrush(ui->wdgMap->backgroundRole(), QBrush(mapPixmap));
         ui->wdgMap->setPalette(palette);
@@ -536,6 +578,27 @@ void robot_gui::footprint_callback(const geometry_msgs::PolygonStamped::ConstPtr
 //        footprintPoints.push_back(QPointF((point.x / mapResolution), (point.y / mapResolution)));
       footprintPoints.push_back(QPointF(point.x, point.y));
     }
+    updateMapDisplay();
+}
+
+void robot_gui::destinationsCallback(const visualization_msgs::Marker::ConstPtr& msg)
+{
+    destinationPoints.clear();
+    for (const auto& point : msg->points) {
+        destinationPoints.push_back(QPointF(point.x, point.y));
+    }
+    updateMapDisplay();
+}
+
+void robot_gui::gaOptimizePathCallback(const nav_msgs::Path::ConstPtr& msg)
+{
+    gaPathPoints.clear();
+    for (const auto& pose: msg->poses) {
+        double x = pose.pose.position.x;
+        double y = pose.pose.position.y;
+        gaPathPoints.push_back(QPointF(x, y));
+    }
+    qDebug() << "Received Path with" << gaPathPoints.size() << "points";
     updateMapDisplay();
 }
 #endif // USE_MAP_RVIZ

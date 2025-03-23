@@ -3,12 +3,26 @@
 using json = nlohmann::json;
 
 PathPlanningGA::PathPlanningGA(void)
-        : populationSize(1000), generations(10000), mutationRate(0.01), crossoverRate(0.8) {
-        std::srand(std::time(nullptr));
-            
-        ros::NodeHandle nh;
-        GA_planning_server = nh.advertiseService("GA_optimize", &PathPlanningGA::handleGARequest, this);
+        : populationSize(1000), generations(10000), mutationRate(0.01), crossoverRate(0.8), stopGA(false) {
+    std::srand(std::time(nullptr));
+        
+    ros::NodeHandle nh;
+    ros::NodeHandle private_nh("~");
+
+    private_nh.setCallbackQueue(&high_priority_queue);
+
+    GA_planning_server = nh.advertiseService("GA_optimize", &PathPlanningGA::handleGARequest, this);
+    Stop_GA_flag_sub = private_nh.subscribe("/GA_stop_flag", 10, &PathPlanningGA::stopGAFlag, this);
+
+    spinner = std::make_unique<ros::AsyncSpinner>(1, &high_priority_queue);
+    spinner->start();
+}
+
+PathPlanningGA::~PathPlanningGA() {
+    if (spinner) {
+        spinner->stop();
     }
+}
 
 void PathPlanningGA::loadCostData(const std::string& start, const std::vector<std::string>& destinations) {
     locationNames.clear();
@@ -171,9 +185,16 @@ std::vector<std::string> PathPlanningGA::optimize() {
             child.chromosome = childChromosome;
             child.fitness = calculateFitness(childChromosome);
             newPopulation.push_back(child);
+
+            if(stopGA) {
+                break;
+            }
         }
 
         population = newPopulation;
+        if(stopGA) {
+            break;
+        }
     }
 
     // Get best solution
@@ -231,17 +252,14 @@ void PathPlanningGA::setEndPosition(const std::string& end) {
     hasEndLocation = true;
 }
 
-bool PathPlanningGA::handleGARequest(robot_navigation::GARequest::Request &req,
-                robot_navigation::GARequest::Response &res)
-{
-    // ROS_INFO("  - %s", req.start.c_str());
-    // res.GA_result.push_back("GA result for: " + req.start);
-    // for (const auto &s : req.destinations)
-    // {
-    //     ROS_INFO("  - %s", s.c_str());
-    //     res.GA_result.push_back("GA result for: " + s);
-    // }
+// Update the stopGAFlag function to use mutex
+void PathPlanningGA::stopGAFlag(const std_msgs::Bool::ConstPtr &msg) {
+    ROS_INFO("Get GA (algorithm) stop flag");
+    stopGA = msg->data;
+}
 
+bool PathPlanningGA::handleGARequest(robot_navigation::GARequest::Request &req,
+                                     robot_navigation::GARequest::Response &res) {
     std::string startLocation = req.start;
     ROS_INFO_STREAM("Receive request:" << startLocation);
     std::vector<std::string> destinations = req.destinations;
@@ -252,22 +270,22 @@ bool PathPlanningGA::handleGARequest(robot_navigation::GARequest::Request &req,
 
     for (const auto &s : req.destinations)
     {
-        if (s == "CheckoutCounter") {
-            setEndPosition(s);
+                if (s == "CheckoutCounter") {
+                    setEndPosition(s);
             
             auto it = std::find(destinations.begin(), destinations.end(), s);
             if (it != destinations.end()) {
                 destinations.erase(it);
-            }
+                    }
             
-            break;
-        }
-    }
+                    break;
+                }
+            }
 
 
     loadCostData(startLocation, destinations);
     initializePopulation(startLocation, destinations);
-    std::vector<std::string> optimalPath = optimize();
+            std::vector<std::string> optimalPath = optimize();
 
     std::cout << "\nOptimal path from " << startLocation << ":\n";
     // res.GA_result.push_back(startLocation);

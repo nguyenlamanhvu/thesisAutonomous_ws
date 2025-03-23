@@ -41,6 +41,11 @@ private:
     ros::Publisher move_base_goal_pub;
     ros::Publisher astar_global_path_pub;
 
+    ros::Subscriber Stop_GA_flag_sub;
+    bool stopGA = false;
+    ros::CallbackQueue high_priority_queue;
+    std::unique_ptr<ros::AsyncSpinner> spinner;
+
     void create_astar_result_callback(const std_msgs::Empty::ConstPtr &msg)
     {
         ROS_INFO_STREAM("Create Astar Result Callback");
@@ -63,10 +68,14 @@ private:
             res.GA_result = srv.response.GA_result;
             gaResult = res.GA_result;
             gaResult.insert(gaResult.begin(), req.start);
+            if(stopGA) {
+                return true;
+            }
         }
         else
         {
             ROS_ERROR("Failed to call GA service");
+            return false;
         }
 
         nav_msgs::Path ga_optimize_path;
@@ -113,6 +122,7 @@ private:
         else
         {
             ROS_ERROR("Failed to call service");
+            return;
         }
 
         nav_msgs::Path ga_optimize_path;
@@ -133,7 +143,6 @@ private:
 
         gaResultIndex = 1;
         publishPathAndGoal();
-
     }
 
     void finish_flag_callback(const std_msgs::Bool::ConstPtr &msg) {
@@ -144,37 +153,12 @@ private:
         }
     }
 
+    void stopGAFlag(const std_msgs::Bool::ConstPtr &msg) {
+        ROS_INFO("Get GA stop flag move_base_integrate");
+        stopGA = msg->data;
+    }
+
     void publishPathAndGoal(void) {
-        // std::string filename = "/home/lamanhvu/thesisAutonomous_ws/src/robot_navigation/AStarResult/" + gaResult[gaResultIndex-1] + "To" + gaResult[gaResultIndex] + ".json";
-        // ROS_INFO_STREAM("A Star path: " << gaResult[gaResultIndex-1] << " To " << gaResult[gaResultIndex]);
-        // nav_msgs::Path astarPath;
-        // astarPath.header.stamp = ros::Time::now();
-	    // astarPath.header.frame_id = "map";
-
-        // geometry_msgs::PoseStamped ps;
-        // ps.header.stamp = ros::Time::now();
-        // ps.header.frame_id = "map";
-
-        // std::ifstream file(filename, std::ifstream::binary);
-        // if (!file) {
-        //     std::cerr << "Error opening JSON file: " << filename << std::endl;
-        //     return;
-        // }
-
-        // json root;
-        // file >> root;  // Parse JSON into the root object
-
-        // // Extract path
-        // const json pathArray = root["path"];
-        // for (const auto &point : pathArray) {
-        //     ps.pose.position.x = point["x"].get<double>();
-        //     ps.pose.position.y = point["y"].get<double>();
-        //     ps.pose.orientation.z = point["qw"].get<double>();
-
-        //     astarPath.poses.push_back(ps);
-        // }
-        // astar_global_path_pub.publish(astarPath);
-
         std::string filePath = "/home/lamanhvu/thesisAutonomous_ws/src/robot_navigation/ProductPose/" + gaResult[gaResultIndex] + ".json";
         ROS_INFO_STREAM("Goal: " + gaResult[gaResultIndex]);
         std::ifstream fileJSON(filePath); // Open the JSON file
@@ -207,6 +191,10 @@ private:
 public:
     MoveBase(void) {
         ros::NodeHandle nh;
+        ros::NodeHandle private_nh("~");
+
+        private_nh.setCallbackQueue(&high_priority_queue);
+
         create_astar_result_sub = nh.subscribe("Create_AStar_Result", 10, &MoveBase::create_astar_result_callback, this);
         replan_astar_result_client = nh.serviceClient<robot_navigation::ReplanPath>("replan_astar");
 
@@ -220,6 +208,17 @@ public:
         finish_flag_sub = nh.subscribe("/move_base/HybridPlannerROS/finish_flag", 10, &MoveBase::finish_flag_callback, this);
         move_base_goal_pub = nh.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1000);
         astar_global_path_pub = nh.advertise<nav_msgs::Path>("/global_path/path", 1000);
+
+        Stop_GA_flag_sub = private_nh.subscribe("/GA_stop_flag", 10, &MoveBase::stopGAFlag, this);
+
+        spinner = std::make_unique<ros::AsyncSpinner>(1, &high_priority_queue);
+        spinner->start();
+    }
+    
+    ~MoveBase() {
+        if (spinner) {
+            spinner->stop();
+        }
     }
 
     void loadJsonData(fileNameData& fileJsonName)

@@ -12,6 +12,7 @@
 #include <ctime>
 
 #include <ros/ros.h>
+#include <ros/callback_queue.h>
 #include <tf/tf.h>
 #include <tf/transform_listener.h>
 #include <nav_msgs/OccupancyGrid.h>
@@ -23,6 +24,7 @@
 #include <geometry_msgs/PolygonStamped.h>
 #include "std_msgs/String.h"
 #include "std_msgs/Int32.h"
+#include "std_msgs/Bool.h"
 #include "robot_navigation/GARequest.h"
 
 class PathPlanningGA {
@@ -47,9 +49,14 @@ private:
     std::map<std::string, int> locationToIndex;
     std::map<int, std::string> indexToLocation;
     ros::ServiceServer GA_planning_server;
+    ros::Subscriber Stop_GA_flag_sub;
+    bool stopGA = false;
+    ros::CallbackQueue high_priority_queue;
+    std::unique_ptr<ros::AsyncSpinner> spinner;
 
 public:
     PathPlanningGA(void);
+    ~PathPlanningGA();
 
     void loadCostData(const std::string& start, const std::vector<std::string>& destinations);
 
@@ -72,6 +79,8 @@ private:
 
     bool handleGARequest(robot_navigation::GARequest::Request &req,
                    robot_navigation::GARequest::Response &res);
+
+    void stopGAFlag(const std_msgs::Bool::ConstPtr &msg);
 };
 
 #endif /*GA_PLANNER_GA_PLANNER_H*/
