@@ -27,6 +27,9 @@
 #include <QFuture>
 #include <QtConcurrent/QtConcurrent>
 #include <QPointF>
+#include <QDir>
+#include <QString>
+#include <QRegularExpression>
 
 #if USE_MAP_RVIZ
 #include <rviz/render_panel.h>
@@ -89,6 +92,7 @@ public slots:
   void updateSuggestions(const QString &text);
   void onItemClicked(QListWidgetItem *item);
   void loadJsonData(fileNameData& fileJsonName);
+  void checkForNewFirmware();
 
 private slots:
   void on_wdgTableShopping_itemClicked(QTableWidgetItem *item);
@@ -120,6 +124,10 @@ private:
   QTimer *ros_timer;
   QTimer *time_date_gui;
   QListWidget *listWidget;
+
+  QString fwFolderPath;
+  qint64 lastTimestampFW;
+  QTimer *fwCheckTimer;
 
  #if USE_MAP_RVIZ
   rviz::RenderPanel *render_panel;

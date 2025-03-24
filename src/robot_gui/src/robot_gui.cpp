@@ -78,6 +78,13 @@ robot_gui::robot_gui(QWidget *parent) :
   connect(ui->lSearchProduct, &QLineEdit::textChanged, this, &robot_gui::updateSuggestions);
   connect(listWidget, &QListWidget::itemClicked, this, &robot_gui::onItemClicked);
 
+  fwFolderPath = "/home/lamanhvu/uploads"; // Change to your folder path
+  lastTimestampFW = 0; // Initialize timestamp tracker
+
+  fwCheckTimer = new QTimer(this);
+  connect(fwCheckTimer, &QTimer::timeout, this, &robot_gui::checkForNewFirmware);
+  fwCheckTimer->start(3000); // Check every 5 minutes
+
  #if USE_MAP_RVIZ
   // Create RViz rendering panel
   render_panel = new rviz::RenderPanel();
@@ -708,4 +715,80 @@ void robot_gui::on_btCheckoutCounter_clicked()
   choosenProductName.push_back("CheckoutCounter");
   ui->wdgTableShopping->setItem(choosenProductName.count() - 1, TableRowProduct::choosenProducts,
                                 new QTableWidgetItem("CheckoutCounter"));
+}
+
+void robot_gui::checkForNewFirmware()
+{
+    if (fwFolderPath.isEmpty())
+    {
+        qDebug() << "Folder path is not set!";
+        return;
+    }
+
+    QDir dir(fwFolderPath);
+    if (!dir.exists())
+    {
+        qDebug() << "Folder does not exist!";
+        return;
+    }
+
+    // Ensure oldVersion folder exists
+    QString oldVersionPath = fwFolderPath + "/oldVersion";
+    QDir oldVersionDir(oldVersionPath);
+    if (!oldVersionDir.exists())
+    {
+        dir.mkdir("oldVersion");
+    }
+
+    // Get list of files
+    QStringList fileList = dir.entryList(QDir::Files, QDir::Time | QDir::Reversed);
+    QRegularExpression regex(R"(^(\d+)-(.+))"); // Match filenames with timestamp
+
+    qint64 maxTimestamp = lastTimestampFW;
+    QStringList newFiles;
+
+    for (const QString &file : fileList)
+    {
+        QRegularExpressionMatch match = regex.match(file);
+        if (match.hasMatch())
+        {
+            qint64 timestamp = match.captured(1).toLongLong();
+            if (timestamp >= lastTimestampFW)
+            {
+                newFiles.append(file);
+                if (timestamp > maxTimestamp)
+                {
+                    maxTimestamp = timestamp;
+                }
+            }
+            else
+            {
+                // Move older files to oldVersion
+                QString oldFilePath = fwFolderPath + "/" + file;
+                QString newFilePath = oldVersionPath + "/" + file;
+
+                if (QFile::exists(newFilePath))
+                {
+                    QFile::remove(newFilePath); // Remove existing file to avoid conflicts
+                }
+
+                if (QFile::rename(oldFilePath, newFilePath))
+                {
+                    qDebug() << "Moved old file:" << file << "to oldVersion/";
+                }
+                else
+                {
+                    qDebug() << "Failed to move file:" << file;
+                }
+            }
+        }
+    }
+
+    // Update the last checked timestamp
+    lastTimestampFW = maxTimestamp;
+
+    if (!newFiles.isEmpty())
+    {
+        qDebug() << "New files detected:" << newFiles;
+    }
 }
