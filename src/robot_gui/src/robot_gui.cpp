@@ -1,5 +1,6 @@
 #include "robot_gui.h"
 #include "loadingdialog.h"
+#include "updatefwloading.h"
 #include "../../../build/robot_gui/ui_robot_gui.h"
 #include <QIcon>
 #include <filesystem>
@@ -81,9 +82,9 @@ robot_gui::robot_gui(QWidget *parent) :
   fwFolderPath = "/home/lamanhvu/uploads"; // Change to your folder path
   lastTimestampFW = 0; // Initialize timestamp tracker
 
-  fwCheckTimer = new QTimer(this);
-  connect(fwCheckTimer, &QTimer::timeout, this, &robot_gui::checkForNewFirmware);
-  fwCheckTimer->start(3000); // Check every 5 minutes
+//  fwCheckTimer = new QTimer(this);
+//  connect(fwCheckTimer, &QTimer::timeout, this, &robot_gui::checkForNewFirmware);
+//  fwCheckTimer->start(10000); // Check every 5 minutes
 
  #if USE_MAP_RVIZ
   // Create RViz rendering panel
@@ -717,6 +718,14 @@ void robot_gui::on_btCheckoutCounter_clicked()
                                 new QTableWidgetItem("CheckoutCounter"));
 }
 
+bool robot_gui::compareFilesByTimestamp(const QString &file1, const QString &file2) {
+    // Extract the numeric timestamp from the filename
+    qint64 timestamp1 = file1.split("-").first().toLongLong();
+    qint64 timestamp2 = file2.split("-").first().toLongLong();
+
+    return timestamp1 < timestamp2;  // Sort in ascending order
+}
+
 void robot_gui::checkForNewFirmware()
 {
     if (fwFolderPath.isEmpty())
@@ -742,53 +751,109 @@ void robot_gui::checkForNewFirmware()
 
     // Get list of files
     QStringList fileList = dir.entryList(QDir::Files, QDir::Time | QDir::Reversed);
-    QRegularExpression regex(R"(^(\d+)-(.+))"); // Match filenames with timestamp
 
-    qint64 maxTimestamp = lastTimestampFW;
-    QStringList newFiles;
+    std::sort(fileList.begin(), fileList.end(), robot_gui::compareFilesByTimestamp);
+    qDebug() << "Sorted file list:";
+    for (const QString &file : fileList) {
+        qDebug() << file;
+    }
 
-    for (const QString &file : fileList)
-    {
-        QRegularExpressionMatch match = regex.match(file);
-        if (match.hasMatch())
-        {
-            qint64 timestamp = match.captured(1).toLongLong();
-            if (timestamp >= lastTimestampFW)
-            {
-                newFiles.append(file);
-                if (timestamp > maxTimestamp)
-                {
-                    maxTimestamp = timestamp;
-                }
-            }
-            else
-            {
-                // Move older files to oldVersion
-                QString oldFilePath = fwFolderPath + "/" + file;
-                QString newFilePath = oldVersionPath + "/" + file;
+    // Keep the latest file, move older ones
+    for (int i = 0; i < fileList.size() - 1; ++i) {
+        QString oldFilePath = fwFolderPath + "/" + fileList[i];
+        QString newFilePath = oldVersionPath + "/" + fileList[i];
 
-                if (QFile::exists(newFilePath))
-                {
-                    QFile::remove(newFilePath); // Remove existing file to avoid conflicts
-                }
-
-                if (QFile::rename(oldFilePath, newFilePath))
-                {
-                    qDebug() << "Moved old file:" << file << "to oldVersion/";
-                }
-                else
-                {
-                    qDebug() << "Failed to move file:" << file;
-                }
-            }
+        if (QFile::rename(oldFilePath, newFilePath)) {
+            qDebug() << "Moved:" << fileList[i] << "->" << newFilePath;
+        } else {
+            qDebug() << "Failed to move:" << fileList[i];
         }
     }
 
-    // Update the last checked timestamp
-    lastTimestampFW = maxTimestamp;
-
-    if (!newFiles.isEmpty())
+    if(fileList.size() >= 1)
     {
-        qDebug() << "New files detected:" << newFiles;
+        QString newFile = fileList[fileList.size() - 1];
+        qDebug() << "New FW: " << newFile;
+
+        updateFWLoading *updateFW = new updateFWLoading(this);
+        updateFW->show();
+        QFuture<void> future = QtConcurrent::run([=]()
+        {
+//          robot_navigation::GARequest srv;
+//          srv.request.start = locationRobot.toStdString();
+//          for (auto product : choosenProductName)
+//          {
+//              srv.request.destinations.push_back(product.toStdString());
+//          }
+
+//          if (!search_optimize_path_client.waitForExistence(ros::Duration(5.0))) {
+//              ROS_ERROR("Service not available");
+//              return;
+//          }
+
+//          if (search_optimize_path_client.call(srv))
+//          {
+//              choosenProductName.clear();
+//              for (const auto &product : srv.response.GA_result) {
+//                  choosenProductName.push_back(QString::fromUtf8(product.data(), int(product.size())));
+//              }
+//              QMetaObject::invokeMethod(this, [=]() {
+//                for(int32_t idx = 0; idx < choosenProductName.size(); idx++)
+//                {
+//                    ui->wdgTableShopping->setItem(idx, TableRowProduct::choosenProducts,
+//                                                new QTableWidgetItem(choosenProductName[idx]));
+//                }
+//                gaResultIndex = 0;
+//                QTableWidgetItem *item = new QTableWidgetItem(choosenProductName[gaResultIndex]);
+//                item->setForeground(QBrush(Qt::blue));
+//                ui->wdgTableShopping->setItem(gaResultIndex, TableRowProduct::choosenProducts, item);
+//              }, Qt::QueuedConnection);
+//          }
+//          else
+//          {
+//              ROS_ERROR("Failed to call GA service");
+//          }
+          QThread::sleep(6);
+
+          QMetaObject::invokeMethod(updateFW, "close", Qt::QueuedConnection);
+        });
     }
+}
+
+void robot_gui::killRosLaunch(const QString &launchName) {
+    QString command = "pkill -f 'roslaunch .* " + launchName + "'";
+    QProcess process;
+    process.start("bash", QStringList() << "-c" << command);
+    process.waitForFinished();
+
+    QString output = process.readAllStandardOutput();
+    QString error = process.readAllStandardError();
+
+    if (!output.isEmpty()) {
+        qDebug() << "ROS Launch Killed:" << output;
+    }
+    if (!error.isEmpty()) {
+        qDebug() << "Error:" << error;
+    }
+}
+
+void robot_gui::startRosLaunch(const QString &packageName, const QString &launchName) {
+    QString command = "roslaunch " + packageName + " " + launchName;
+    QProcess *process = new QProcess(this);
+    process->start("bash", QStringList() << "-c" << command);
+
+    if (!process->waitForStarted()) {
+        qDebug() << "Failed to start launch:" << launchName;
+        return;
+    } else {
+        qDebug() << "Launch started successfully:" << launchName;
+    }
+
+    connect(process, &QProcess::readyReadStandardOutput, [=]() {
+        qDebug() << process->readAllStandardOutput();
+    });
+
+    connect(process, &QProcess::readyReadStandardError, [=]() {
+        qDebug() << "[ERROR] " << process->readAllStandardError();
+    });
 }

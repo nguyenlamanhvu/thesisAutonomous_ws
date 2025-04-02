@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 4.9.2, 2025-03-08T01:34:04. -->
+<!-- Written by QtCreator 4.9.2, 2025-03-31T10:24:40. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -102,9 +102,9 @@
     <value type="int" key="ProjectExplorer.BuildConfiguration.BuildStepListCount">2</value>
     <value type="bool" key="ProjectExplorer.BuildConfiguration.ClearSystemEnvironment">false</value>
     <valuelist type="QVariantList" key="ProjectExplorer.BuildConfiguration.UserEnvironmentChanges">
+     <value type="QString">PATH=/opt/ros/noetic/bin:/home/lamanhvu/.nvm/versions/node/v22.14.0/bin:/home/lamanhvu/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin</value>
      <value type="QString">PWD=/home/lamanhvu/thesisAutonomous_ws</value>
-     <value type="QString">ROS_MASTER_URI=http://localhost:11311</value>
-     <value type="QString">SHLVL=333</value>
+     <value type="QString">SHLVL=545</value>
      <value type="QString">TERM=xterm</value>
      <value type="QString">_=/usr/bin/env</value>
     </valuelist>

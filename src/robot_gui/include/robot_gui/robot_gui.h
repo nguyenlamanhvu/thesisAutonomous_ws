@@ -12,6 +12,7 @@
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <robot_navigation/GARequest.h>
+#include <robot_update/updateFWSignal.h>
 #include <dynamic_reconfigure/Reconfigure.h>
 #include <dynamic_reconfigure/DoubleParameter.h>
 #include <dynamic_reconfigure/Config.h>
@@ -30,6 +31,7 @@
 #include <QDir>
 #include <QString>
 #include <QRegularExpression>
+#include <QProcess>
 
 #if USE_MAP_RVIZ
 #include <rviz/render_panel.h>
@@ -85,6 +87,9 @@ public:
   void robot_velocity_callback(const geometry_msgs::Twist::ConstPtr &msg);
   void footprint_callback(const geometry_msgs::PolygonStamped::ConstPtr &msg);
   void amcl_pose_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &msg);
+  void killRosLaunch(const QString &launchName);
+  void startRosLaunch(const QString &packageName, const QString &launchName);
+  static bool compareFilesByTimestamp(const QString &file1, const QString &file2);
 
 public slots:
   void spinOnce();
@@ -161,6 +166,8 @@ private:
   ros::ServiceClient set_param_client;
   ros::Publisher stop_robot_pub;
   ros::Publisher resume_robot_pub;
+
+  ros::ServiceClient update_FW_client;
 
   QVector<QPointF> footprintPoints;
   QVector<QString> choosenProductName;

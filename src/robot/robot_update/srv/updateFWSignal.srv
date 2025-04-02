@@ -1,0 +1,6 @@
+# Request: FW name
+string FW_name
+
+---
+# Response: Signal 
+bool signalSuccess
