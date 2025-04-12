@@ -41,6 +41,7 @@ private:
     ros::Publisher ga_optimize_path_pub;
     ros::Publisher destinations_pub;
     ros::Publisher goods_pub;
+    ros::Publisher clusters_pub;
 
     ros::Subscriber finish_flag_sub;
     ros::Publisher move_base_goal_pub;
@@ -158,9 +159,13 @@ private:
 
     void finish_flag_callback(const std_msgs::Bool::ConstPtr &msg) {
         if(msg->data == true) {
+            if(gaResultIndex < goodsIndices.size()){
+                visualization_msgs::Marker cluster_id = createClusterMarker();
+                clusters_pub.publish(cluster_id);
+            } 
             gaResultIndex++;
             if(gaResultIndex >= gaResult.size()) return;
-            publishPathAndGoal();
+            publishPathAndGoal();  
         }
     }
 
@@ -217,6 +222,7 @@ public:
         ga_optimize_path_pub = nh.advertise<nav_msgs::Path>("/global_path/ga_path", 1000);
         destinations_pub = nh.advertise<visualization_msgs::Marker>("/global_path/destinations_point", 1000);
         goods_pub = nh.advertise<visualization_msgs::Marker>("/global_path/goods_point", 1000);
+        clusters_pub = nh.advertise<visualization_msgs::Marker>("/global_path/clusters_point", 1000);
 
         finish_flag_sub = nh.subscribe("/move_base/HybridPlannerROS/finish_flag", 10, &MoveBase::finish_flag_callback, this);
         move_base_goal_pub = nh.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1000);
@@ -520,9 +526,9 @@ public:
         marker.id = 0;
         marker.type = visualization_msgs::Marker::SPHERE_LIST;
         marker.action = visualization_msgs::Marker::ADD;
-        marker.scale.x = 0.1;  // Point size
-        marker.scale.y = 0.1;
-        marker.scale.z = 0.1;
+        marker.scale.x = 0.2;  // Point size
+        marker.scale.y = 0.2;
+        marker.scale.z = 0.2;
         marker.color.r = 1.0;  // Red color
         marker.color.g = 0.0;
         marker.color.b = 0.0;
@@ -562,9 +568,9 @@ public:
         marker.id = 0;
         marker.type = visualization_msgs::Marker::SPHERE_LIST;
         marker.action = visualization_msgs::Marker::ADD;
-        marker.scale.x = 0.1;  // Point size
-        marker.scale.y = 0.1;
-        marker.scale.z = 0.1;
+        marker.scale.x = 0.2;  // Point size
+        marker.scale.y = 0.2;
+        marker.scale.z = 0.2;
         marker.color.r = 0.0;  
         marker.color.g = 0.0;
         marker.color.b = 1.0;  // Blue color
@@ -572,17 +578,6 @@ public:
         // marker.text = productName;
 
         for (const auto &goodName : goodsResult) {
-            // Check if this good is already in the path
-            bool isInPath = false;
-            for (const auto &productName : gaResult) {
-                if (strcmp(goodName.c_str(), productName.c_str()) == 0) {
-                    isInPath = true;
-                    break;  // Found in path, no need to continue checking
-                }
-            }
-
-            // Skip this good if it's already in the path
-            if (isInPath) continue;
             
             std::string filePath = "/home/lamanhvu/thesisAutonomous_ws/src/robot_navigation/ProductPoseReal/" + goodName + ".json";
 
@@ -607,7 +602,51 @@ public:
 
         return marker;
     }
+
+    visualization_msgs::Marker createClusterMarker(void) {
+        visualization_msgs::Marker marker;
+        marker.header.frame_id = "map";
+        marker.header.stamp = ros::Time::now();
+        marker.ns = "/global_path/cluster_points";
+        marker.id = 0;
+        marker.type = visualization_msgs::Marker::SPHERE_LIST;
+        marker.action = visualization_msgs::Marker::ADD;
+        marker.scale.x = 0.2;  // Point size
+        marker.scale.y = 0.2;
+        marker.scale.z = 0.2;
+        marker.color.r = 0.0;  
+        marker.color.g = 1.0;   // Green color
+        marker.color.b = 0.0;  
+        marker.color.a = 1.0;
+        // marker.text = productName;
+
+        for (int32_t idx = goodsIndices[gaResultIndex-1]; idx < goodsIndices[gaResultIndex]; idx++) {
+            std::string filePath = "/home/lamanhvu/thesisAutonomous_ws/src/robot_navigation/ProductPoseReal/" 
+                                        + goodsResult[idx] + ".json";
+
+            std::ifstream file(filePath); // Open the JSON file
+            if (!file) {
+                std::cerr << "Error: Cannot open file!" << std::endl;
+                continue;
+            }
+
+            json j;
+            file >> j; // Parse JSON data
+
+            // Extract position and orientation
+            std::vector<double> position = j["positon"]; // Note: Key is "positon" (typo in JSON)
+
+            geometry_msgs::Point p;
+            p.x = position[0];
+            p.y = position[1];
+            p.z = position[2];
+            marker.points.push_back(p);
+        }
+
+        return marker;
+    }
 };
+
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "move_base");

@@ -356,6 +356,14 @@ Visualization Manager:
         {}
       Queue Size: 100
       Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /global_path/clusters_point
+      Name: Marker
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -413,4 +421,4 @@ Window Geometry:
     collapsed: true
   Width: 1279
   X: 72
-  Y: 27
+  Y: 0

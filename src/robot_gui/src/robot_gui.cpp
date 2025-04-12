@@ -101,16 +101,16 @@ robot_gui::robot_gui(QWidget *parent) :
   viz_manager->startUpdate();
 
   // Add a grid display
-  rviz::Display *grid = viz_manager->createDisplay("rviz/Grid", "Grid", true);
-  if (grid) {
-    rviz::Property* gridPropertyLines = grid->subProp("Line Style");
-    if (gridPropertyLines)
-        gridPropertyLines->setValue("Lines");
+//  rviz::Display *grid = viz_manager->createDisplay("rviz/Grid", "Grid", true);
+//  if (grid) {
+//    rviz::Property* gridPropertyLines = grid->subProp("Line Style");
+//    if (gridPropertyLines)
+//        gridPropertyLines->setValue("Lines");
 
-    rviz::Property* gridPropertyCell = grid->subProp("Cell Size");
-    if (gridPropertyCell)
-        gridPropertyCell->setValue(1.0);
-  }
+//    rviz::Property* gridPropertyCell = grid->subProp("Cell Size");
+//    if (gridPropertyCell)
+//        gridPropertyCell->setValue(1.0);
+//  }
 
   // Add a map display from /map topic
   rviz::Display *map = viz_manager->createDisplay("rviz/Map", "Map", true);
@@ -119,18 +119,56 @@ robot_gui::robot_gui(QWidget *parent) :
       if (topicProperty)
           topicProperty->setValue("/map");
   }
+
+  rviz::Display *path = viz_manager->createDisplay("rviz/Path", "Path", true);
+  if (path) {
+      rviz::Property* pathTopicProperty = path->subProp("Topic");
+      if (pathTopicProperty)
+          pathTopicProperty->setValue("/global_path/ga_path");  // your path topic name
+
+      // Optional: Set line color and other properties
+      rviz::Property* colorProperty = path->subProp("Color");
+      if (colorProperty)
+          colorProperty->setValue(QColor(0, 255, 0));  // Green
+
+      rviz::Property* lineWidthProperty = path->subProp("Line Width");
+      if (lineWidthProperty)
+          lineWidthProperty->setValue(0.2);
+  }
+
+  rviz::Display *destinationsDisplay = viz_manager->createDisplay("rviz/Marker", "Goods", true);
+  destinationsDisplay->subProp("Marker Topic")->setValue("/global_path/destinations_point");
+
+  rviz::Display *goodsDisplay = viz_manager->createDisplay("rviz/Marker", "Goods", true);
+  goodsDisplay->subProp("Marker Topic")->setValue("/global_path/goods_point");
+
+  rviz::Display *clustersDisplay = viz_manager->createDisplay("rviz/Marker", "Clusters", true);
+  clustersDisplay->subProp("Marker Topic")->setValue("/global_path/clusters_point");
+
+  rviz::Display *footprintPoly = viz_manager->createDisplay("rviz/Polygon", "Footprint", true);
+  if (footprintPoly) {
+      rviz::Property* topicProperty = footprintPoly->subProp("Topic");
+      if (topicProperty)
+          topicProperty->setValue("/move_base/local_costmap/footprint");
+      rviz::Property* colorProperty = footprintPoly->subProp("Color");
+      if (colorProperty)
+          colorProperty->setValue(QColor(0, 0, 0)); // black
+      rviz::Property* lineWidthProperty = footprintPoly->subProp("Line Width");
+      if (lineWidthProperty)
+          lineWidthProperty->setValue(0.2);
+  }
 #elif !USE_MAP_RVIZ
   // Subscribe to /map topic
   map_sub = nh_->subscribe("/map", 1, &robot_gui::mapCallback, this);
   destinations_sub = nh_->subscribe("/global_path/destinations_point", 1000, &robot_gui::destinationsCallback, this);
   ga_optimize_path_sub = nh_->subscribe("/global_path/ga_path", 1000, &robot_gui::gaOptimizePathCallback, this);
+  footprintSub = nh_->subscribe("/move_base/local_costmap/footprint", 1, &robot_gui::footprint_callback, this);
   grabGesture(Qt::PinchGesture);
 #endif // USE_MAP_RVIZ
 
   finish_flag_sub = nh_->subscribe("/move_base/HybridPlannerROS/finish_flag", 10, &robot_gui::finish_flag_callback, this);
   robot_vel_sub = nh_->subscribe("/cmd_vel", 10, &robot_gui::robot_velocity_callback, this);
   search_optimize_path_client = nh_->serviceClient<robot_navigation::GARequest>("/GUI_search_optimize");
-  footprintSub = nh_->subscribe("/move_base/local_costmap/footprint", 1, &robot_gui::footprint_callback, this);
   amcl_pose_sub = nh_->subscribe("/amcl_pose", 1, &robot_gui::amcl_pose_callback, this);
   set_param_client = nh_->serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/HybridPlannerROS/set_parameters");
   stop_robot_pub = nh_->advertise<actionlib_msgs::GoalID>("/move_base/cancel", 10);
@@ -349,19 +387,29 @@ void robot_gui::on_btSearch_clicked()
     if (search_optimize_path_client.call(srv))
     {
         choosenProductName.clear();
+        fullChoosenProductName.clear();
+        fullChoosenProductIndice.clear();
         for (const auto &product : srv.response.GA_result) {
             choosenProductName.push_back(QString::fromUtf8(product.data(), int(product.size())));
         }
+        for (const auto &product : srv.response.Products) {
+            fullChoosenProductName.push_back(QString::fromUtf8(product.data(), int(product.size())));
+        }
+        for (const auto &indice : srv.response.Products_indices) {
+            fullChoosenProductIndice.push_back(indice);
+        }
         QMetaObject::invokeMethod(this, [=]() {
-          for(int32_t idx = 0; idx < choosenProductName.size(); idx++)
-          {
-              ui->wdgTableShopping->setItem(idx, TableRowProduct::choosenProducts,
-                                          new QTableWidgetItem(choosenProductName[idx]));
-          }
-          gaResultIndex = 0;
-          QTableWidgetItem *item = new QTableWidgetItem(choosenProductName[gaResultIndex]);
-          item->setForeground(QBrush(Qt::blue));
-          ui->wdgTableShopping->setItem(gaResultIndex, TableRowProduct::choosenProducts, item);
+            for(int32_t idx = 0; idx < fullChoosenProductName.size(); idx++)
+            {
+                ui->wdgTableShopping->setItem(idx, TableRowProduct::choosenProducts,
+                                            new QTableWidgetItem(fullChoosenProductName[idx]));
+            }
+            gaResultIndex = 0;
+            for(int32_t idx = 0; idx < fullChoosenProductIndice[gaResultIndex+1]; idx++){
+                QTableWidgetItem *item = new QTableWidgetItem(fullChoosenProductName[idx]);
+                item->setForeground(QBrush(Qt::blue));
+                ui->wdgTableShopping->setItem(idx, TableRowProduct::choosenProducts, item);
+            }
         }, Qt::QueuedConnection);
     }
     else
@@ -378,19 +426,40 @@ void robot_gui::on_btSearch_clicked()
 
 void robot_gui::finish_flag_callback(const std_msgs::Bool::ConstPtr &msg) {
     if(msg->data == true) {
-        QTableWidgetItem *item = new QTableWidgetItem(choosenProductName[gaResultIndex]);
-        item->setForeground(QBrush(Qt::red));
-        ui->wdgTableShopping->setItem(gaResultIndex, TableRowProduct::choosenProducts, item);
+        if(gaResultIndex < fullChoosenProductIndice.size() - 1){
+            for(int32_t idx = fullChoosenProductIndice[gaResultIndex]; idx < fullChoosenProductIndice[gaResultIndex+1]; idx++){
+                QTableWidgetItem *item = new QTableWidgetItem(fullChoosenProductName[idx]);
+                item->setForeground(QBrush(Qt::red));
+                ui->wdgTableShopping->setItem(idx, TableRowProduct::choosenProducts, item);
+            }
+        }
 
         gaResultIndex++;
         if(gaResultIndex >= choosenProductName.size())
         {
-            return;
+          if(ui->lblLocation->text() == "CheckoutCounter"){
+              ui->btnStopResume->setText("RETURN START");
+              choosenProductName.push_back("Start");
+          }
+          else if(ui->lblLocation->text() == "Start"){
+              choosenProductName.clear();
+              fullChoosenProductName.clear();
+              fullChoosenProductIndice.clear();
+              for (int row = 0; row < rowCount; ++row)
+              {
+                  delete ui->wdgTableShopping->takeItem(row, TableRowProduct::choosenProducts);
+              }
+          }
+          return;
         }
-
-        item = new QTableWidgetItem(choosenProductName[gaResultIndex]);
-        item->setForeground(QBrush(Qt::blue));
-        ui->wdgTableShopping->setItem(gaResultIndex, TableRowProduct::choosenProducts, item);
+        for(int32_t idx = fullChoosenProductIndice[gaResultIndex]; idx < fullChoosenProductIndice[gaResultIndex+1]; idx++){
+            QTableWidgetItem *item = new QTableWidgetItem(fullChoosenProductName[idx]);
+            item->setForeground(QBrush(Qt::blue));
+            ui->wdgTableShopping->setItem(idx, TableRowProduct::choosenProducts, item);
+        }
+        ui->btnStopResume->setText("NEXT GOODS");
+        actionlib_msgs::GoalID cancel_msg;
+        stop_robot_pub.publish(cancel_msg);
     }
 }
 
@@ -779,43 +848,40 @@ void robot_gui::checkForNewFirmware()
         updateFW->show();
         QFuture<void> future = QtConcurrent::run([=]()
         {
-//          robot_navigation::GARequest srv;
-//          srv.request.start = locationRobot.toStdString();
-//          for (auto product : choosenProductName)
-//          {
-//              srv.request.destinations.push_back(product.toStdString());
-//          }
+          robot_navigation::GARequest srv;
+          srv.request.start = locationRobot.toStdString();
+          for (auto product : choosenProductName)
+          {
+              srv.request.destinations.push_back(product.toStdString());
+          }
 
-//          if (!search_optimize_path_client.waitForExistence(ros::Duration(5.0))) {
-//              ROS_ERROR("Service not available");
-//              return;
-//          }
+          if (!search_optimize_path_client.waitForExistence(ros::Duration(5.0))) {
+              ROS_ERROR("Service not available");
+              return;
+          }
 
-//          if (search_optimize_path_client.call(srv))
-//          {
-//              choosenProductName.clear();
-//              for (const auto &product : srv.response.GA_result) {
-//                  choosenProductName.push_back(QString::fromUtf8(product.data(), int(product.size())));
-//              }
-//              QMetaObject::invokeMethod(this, [=]() {
-//                for(int32_t idx = 0; idx < choosenProductName.size(); idx++)
-//                {
-//                    ui->wdgTableShopping->setItem(idx, TableRowProduct::choosenProducts,
-//                                                new QTableWidgetItem(choosenProductName[idx]));
-//                }
-//                gaResultIndex = 0;
-//                QTableWidgetItem *item = new QTableWidgetItem(choosenProductName[gaResultIndex]);
-//                item->setForeground(QBrush(Qt::blue));
-//                ui->wdgTableShopping->setItem(gaResultIndex, TableRowProduct::choosenProducts, item);
-//              }, Qt::QueuedConnection);
-//          }
-//          else
-//          {
-//              ROS_ERROR("Failed to call GA service");
-//          }
-          QThread::sleep(6);
-
-          QMetaObject::invokeMethod(updateFW, "close", Qt::QueuedConnection);
+          if (search_optimize_path_client.call(srv))
+          {
+              choosenProductName.clear();
+              for (const auto &product : srv.response.GA_result) {
+                  choosenProductName.push_back(QString::fromUtf8(product.data(), int(product.size())));
+              }
+              QMetaObject::invokeMethod(this, [=]() {
+                for(int32_t idx = 0; idx < choosenProductName.size(); idx++)
+                {
+                    ui->wdgTableShopping->setItem(idx, TableRowProduct::choosenProducts,
+                                                new QTableWidgetItem(choosenProductName[idx]));
+                }
+                gaResultIndex = 0;
+                QTableWidgetItem *item = new QTableWidgetItem(choosenProductName[gaResultIndex]);
+                item->setForeground(QBrush(Qt::blue));
+                ui->wdgTableShopping->setItem(gaResultIndex, TableRowProduct::choosenProducts, item);
+              }, Qt::QueuedConnection);
+          }
+          else
+          {
+              ROS_ERROR("Failed to call GA service");
+          }
         });
     }
 }

@@ -583,12 +583,15 @@ bool PathPlanningGA::handleGARequest(robot_navigation::GARequest::Request &req,
     // 6. Run GA with start location, cluster centers, and end location
     loadCostData(startLocation, clusterCenters);
     initializePopulation(startLocation, clusterCenters);
+    // loadCostData(startLocation, destinations);
+    // initializePopulation(startLocation, destinations);
     std::vector<std::string> optimalPath = optimize();
 
     // Create 1D array of goods arranged by clusters
     std::vector<std::string> arrangedGoods;
     std::vector<int> goodsIndices;
 
+    goodsIndices.push_back(0);
     int cntGoods = 0;
     for (size_t i = 0; i < optimalPath.size(); i++) {
         const std::string& center = optimalPath[i];
@@ -600,12 +603,16 @@ bool PathPlanningGA::handleGARequest(robot_navigation::GARequest::Request &req,
                 // Randomly shuffle goods within cluster
                 std::random_shuffle(clusterGoods.begin(), clusterGoods.end());
                 // Add to arranged goods
-                goodsIndices.push_back(cntGoods);
                 cntGoods += clusterGoods.size();
+                goodsIndices.push_back(cntGoods);
                 arrangedGoods.insert(arrangedGoods.end(), clusterGoods.begin(), clusterGoods.end());
                 break;
             }
         }
+    }
+    if(hasEndLocation) {
+        goodsIndices.push_back(cntGoods+1);
+        arrangedGoods.push_back(endLocation);
     }
 
     std::cout << "\n1. Optimal path from " << startLocation << ":\n";

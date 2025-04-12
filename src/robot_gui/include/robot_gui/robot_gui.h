@@ -171,6 +171,8 @@ private:
 
   QVector<QPointF> footprintPoints;
   QVector<QString> choosenProductName;
+  QVector<QString> fullChoosenProductName;
+  QVector<int> fullChoosenProductIndice;
   QVector<fileNameData> fileJsonData;
   QString locationRobot;
 
