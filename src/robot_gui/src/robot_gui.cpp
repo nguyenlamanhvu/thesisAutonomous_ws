@@ -173,6 +173,8 @@ robot_gui::robot_gui(QWidget *parent) :
   set_param_client = nh_->serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/HybridPlannerROS/set_parameters");
   stop_robot_pub = nh_->advertise<actionlib_msgs::GoalID>("/move_base/cancel", 10);
   resume_robot_pub = nh_->advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1000);
+  real_path_pub = nh_->advertise<nav_msgs::Path>("/global_path/real_path", 1);
+  publish_timer = nh_->createTimer(ros::Duration(0.1), &robot_gui::publishRealPath, this);
 }
 
 robot_gui::~robot_gui()
@@ -203,6 +205,11 @@ void robot_gui::updateDateTimeGui(){
 }
 
 void robot_gui::amcl_pose_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &msg){
+    PathPoint point;
+    point.x = msg->pose.pose.position.x;
+    point.y = msg->pose.pose.position.y;
+
+    real_path.push_back(point);
     double minDistance = 1e6;
     for(uint32_t index = 0; index < fileJsonData.size(); index++)
     {
@@ -221,6 +228,25 @@ void robot_gui::amcl_pose_callback(const geometry_msgs::PoseWithCovarianceStampe
 
     ui->lblLocation->setText(locationRobot);
     return;
+}
+
+void robot_gui::publishRealPath(const ros::TimerEvent&) {
+    nav_msgs::Path path;
+    path.header.stamp = ros::Time::now();
+    path.header.frame_id = "map";
+
+    for (const auto& point : real_path) {
+        geometry_msgs::PoseStamped pose;
+        pose.header = path.header;
+        pose.pose.position.x = point.x;
+        pose.pose.position.y = point.y;
+        pose.pose.position.z = 0.0;
+        pose.pose.orientation.w = 1.0;  // Default orientation
+
+        path.poses.push_back(pose);
+    }
+
+    real_path_pub.publish(path);
 }
 
 void robot_gui::loadJsonData(fileNameData& fileJsonName)
@@ -367,6 +393,7 @@ void robot_gui::onItemClicked(QListWidgetItem *item) {
 void robot_gui::on_btSearch_clicked()
 {
   ROS_INFO("Search optimize path");
+  real_path.clear();
 
   LoadingDialog *loading = new LoadingDialog(this);
   loading->show();

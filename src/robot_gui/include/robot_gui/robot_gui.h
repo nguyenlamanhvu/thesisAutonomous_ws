@@ -7,6 +7,7 @@
 #include <ros/ros.h>
 #include <std_msgs/String.h>
 #include <std_msgs/Bool.h>
+#include <nav_msgs/Path.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/PolygonStamped.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
@@ -82,6 +83,11 @@ public:
       QVector<double> orientation;
   };
 
+  struct PathPoint {
+      double x;
+      double y;
+  };
+
   void loadProductName();
   void finish_flag_callback(const std_msgs::Bool::ConstPtr &msg);
   void robot_velocity_callback(const geometry_msgs::Twist::ConstPtr &msg);
@@ -90,6 +96,7 @@ public:
   void killRosLaunch(const QString &launchName);
   void startRosLaunch(const QString &packageName, const QString &launchName);
   static bool compareFilesByTimestamp(const QString &file1, const QString &file2);
+  void publishRealPath(const ros::TimerEvent&);
 
 public slots:
   void spinOnce();
@@ -166,6 +173,8 @@ private:
   ros::ServiceClient set_param_client;
   ros::Publisher stop_robot_pub;
   ros::Publisher resume_robot_pub;
+  ros::Publisher real_path_pub;
+  ros::Timer publish_timer;
 
   ros::ServiceClient update_FW_client;
 
@@ -175,6 +184,7 @@ private:
   QVector<int> fullChoosenProductIndice;
   QVector<fileNameData> fileJsonData;
   QString locationRobot;
+  std::vector<PathPoint> real_path;
 
   uint32_t gaResultIndex;
   uint32_t rowCount;
