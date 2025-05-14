@@ -230,7 +230,7 @@ int findOptimalK(const std::vector<Good>& goods, double maxRadius, int maxK) {
 }
 
 PathPlanningGA::PathPlanningGA(void)
-        : populationSize(1000), generations(10000), mutationRate(0.01), crossoverRate(0.8), stopGA(false) {
+        : populationSize(100), generations(25000), mutationRate(0.01), crossoverRate(0.8), stopGA(false) {
     std::srand(std::time(nullptr));
         
     ros::NodeHandle nh;
@@ -387,6 +387,11 @@ void PathPlanningGA::mutate(std::vector<int>& chromosome) {
 }
 
 std::vector<std::string> PathPlanningGA::optimize() {
+    const int maxRecent = 10;
+    const double epsilon = 1e-5;
+
+    std::deque<double> recentFitnesses;
+
     for (int gen = 0; gen < generations; ++gen) {
         std::vector<Individual> newPopulation;
 
@@ -394,6 +399,22 @@ std::vector<std::string> PathPlanningGA::optimize() {
         auto elite = std::max_element(population.begin(), population.end(),
             [](const Individual& a, const Individual& b) { return a.fitness < b.fitness; });
         newPopulation.push_back(*elite);
+
+        std::cout << "Generation: " << gen << " Best Fitness: " << elite->fitness << std::endl;
+
+        // Store recent fitnesses for early stopping
+        recentFitnesses.push_back(elite->fitness);
+        if (recentFitnesses.size() > maxRecent)
+            recentFitnesses.pop_front();
+
+        // Check for early stopping
+        if (recentFitnesses.size() == maxRecent) {
+            double maxF = *std::max_element(recentFitnesses.begin(), recentFitnesses.end());
+            double minF = *std::min_element(recentFitnesses.begin(), recentFitnesses.end());
+            if (maxF - minF < epsilon) {
+                break;
+            }
+        }
 
         // Generate new population
         while (newPopulation.size() < populationSize) {
@@ -435,9 +456,9 @@ std::vector<std::string> PathPlanningGA::optimize() {
     }
 
     // Add end location to path if specified
-    if (hasEndLocation) {
-        optimalPath.push_back(endLocation);
-    }
+    // if (hasEndLocation) {
+    //     optimalPath.push_back(endLocation);
+    // }
 
     return optimalPath;
 }
@@ -501,6 +522,7 @@ void PathPlanningGA::stopGAFlag(const std_msgs::Bool::ConstPtr &msg) {
 bool PathPlanningGA::handleGARequest(robot_navigation::GARequest::Request &req,
                                      robot_navigation::GARequest::Response &res) {
     std::string startLocation = req.start;
+    std::string realEndLocation = "";
     ROS_INFO_STREAM("Receive request:" << startLocation);
     std::vector<std::string> destinations = req.destinations;
     for (const auto &s : req.destinations)
@@ -521,8 +543,9 @@ bool PathPlanningGA::handleGARequest(robot_navigation::GARequest::Request &req,
     for (const auto &s : req.destinations)
     {
         if (s == "CheckoutCounter") {
-            setEndPosition(s);
-    
+            // setEndPosition(s);
+            realEndLocation = s;
+
             auto it = std::find(destinations.begin(), destinations.end(), s);
             if (it != destinations.end()) {
                 destinations.erase(it);
@@ -589,10 +612,10 @@ bool PathPlanningGA::handleGARequest(robot_navigation::GARequest::Request &req,
 
     // Create 1D array of goods arranged by clusters
     std::vector<std::string> arrangedGoods;
-    std::vector<int> goodsIndices;
+    // std::vector<int> goodsIndices;
 
-    goodsIndices.push_back(0);
-    int cntGoods = 0;
+    // goodsIndices.push_back(0);
+    // int cntGoods = 0;
     for (size_t i = 0; i < optimalPath.size(); i++) {
         const std::string& center = optimalPath[i];
         // Find cluster index for this center
@@ -600,30 +623,53 @@ bool PathPlanningGA::handleGARequest(robot_navigation::GARequest::Request &req,
             if (clusterCenters[j] == center) {
                 // Add all goods from this cluster
                 std::vector<std::string> clusterGoods = clusterContents[j];
+                
+                if(clusterGoods.size() > 1) {
+                    if(i < optimalPath.size() - 1) {
+                        // Set end position for next cluster
+                        setEndPosition(optimalPath[i+1]);
+                    } else {
+                        if(realEndLocation != "") {
+                            // Set end position to end location
+                            setEndPosition(realEndLocation);
+                        }
+                    }
+                    loadCostData(startLocation, clusterGoods);
+                    initializePopulation(startLocation, clusterGoods);
+                    clusterGoods.clear();
+                    clusterGoods = optimize();
+                    hasEndLocation = false;
+                }
                 // Randomly shuffle goods within cluster
-                std::random_shuffle(clusterGoods.begin(), clusterGoods.end());
+                // std::random_shuffle(clusterGoods.begin(), clusterGoods.end());
                 // Add to arranged goods
-                cntGoods += clusterGoods.size();
-                goodsIndices.push_back(cntGoods);
+                // cntGoods += clusterGoods.size();
+                // goodsIndices.push_back(cntGoods);
                 arrangedGoods.insert(arrangedGoods.end(), clusterGoods.begin(), clusterGoods.end());
+                startLocation = arrangedGoods.back();
                 break;
             }
         }
     }
-    if(hasEndLocation) {
-        goodsIndices.push_back(cntGoods+1);
-        arrangedGoods.push_back(endLocation);
+    if(realEndLocation != "") {
+        // goodsIndices.push_back(cntGoods+1);
+        arrangedGoods.push_back(realEndLocation);
     }
 
     std::cout << "\n1. Optimal path from " << startLocation << ":\n";
     // res.GA_result.push_back(startLocation);
-    for (const auto& location : optimalPath) {
+    // for (const auto& location : optimalPath) {
+    //     std::cout << location << " -> ";
+    //     res.GA_result.push_back(location);
+    // }
+    for (const auto& location : arrangedGoods) {
         std::cout << location << " -> ";
         res.GA_result.push_back(location);
     }
     std::cout << "End\n";
     // res.GA_result.push_back("End");
     hasEndLocation = false;
+    realEndLocation = "";
 
     std::cout << "2. Arranged Goods (by cluster order):\n";
     std::cout << "[ ";
@@ -637,11 +683,20 @@ bool PathPlanningGA::handleGARequest(robot_navigation::GARequest::Request &req,
     std::cout << " ]\n";
 
     std::cout << "3. Goods Indices:\n";
+    // std::cout << "[ ";
+    // for (size_t i = 0; i < goodsIndices.size(); i++) {
+    //     std::cout << goodsIndices[i];
+    //     res.Products_indices.push_back(goodsIndices[i]);
+    //     if (i < goodsIndices.size() - 1) {
+    //         std::cout << ", ";
+    //     }
+    // }
+    // std::cout << " ]\n";
     std::cout << "[ ";
-    for (size_t i = 0; i < goodsIndices.size(); i++) {
-        std::cout << goodsIndices[i];
-        res.Products_indices.push_back(goodsIndices[i]);
-        if (i < goodsIndices.size() - 1) {
+    for (size_t i = 0; i <= arrangedGoods.size(); i++) {
+        std::cout << i;
+        res.Products_indices.push_back(i);
+        if (i < arrangedGoods.size()) {
             std::cout << ", ";
         }
     }
